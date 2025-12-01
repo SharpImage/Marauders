@@ -28,27 +28,27 @@ class PlayerService:
     # ----------------------------------------------------------------------
     # STATUS TABLE (Dashboard)
     # ----------------------------------------------------------------------
-    def build_player_status_table(self) -> pd.DataFrame:
+    def build_player_status_table(self, include_inactive: bool = False) -> pd.DataFrame:
         """
         Builds the player status table combining:
-          - Player details (Players table)
-          - Current handicap (from HandicapRepository)
-          - Current balance (from FinanceRepository)
+          - Player details
+          - Current handicap (active only)
+          - Current balance (all players, then merged)
 
-        Fully safe even if handicap or finance tables do not exist yet.
+        If include_inactive=True:
+            All players appear (active + inactive)
+        Otherwise:
+            Only active players are included.
         """
 
-        # -------------------------
-        # 1. Load Player Table
-        # -------------------------
-        df_players = self.players_repo.get_all().copy()
+        # 1. ACTIVE players only unless include_inactive flag is set
+        if include_inactive:
+            df_players = self.players_repo.get_all().copy()
+        else:
+            df_players = self.players_repo.get_active_players().copy()
 
-        # -------------------------
-        # 2. Load Current Handicaps (safe)
-        # -------------------------
+        # 2. Current handicaps (already filtered to active players)
         df_hcaps = self.hcaps_repo.get_current().copy()
-
-        # If handicap table missing or empty → safe fallback
         if (
             df_hcaps is None
             or df_hcaps.empty
@@ -61,9 +61,7 @@ class PlayerService:
                 df_hcaps["CurrentHandicap"], errors="coerce"
             ).fillna(0.0)
 
-        # -------------------------
-        # 3. Load Balances (safe)
-        # -------------------------
+        # 3. Balances – may include inactive players, that's fine
         balances = self.finance_repo.get_player_balances().copy()
         if "Balance" not in balances.columns:
             balances["Balance"] = 0.0
@@ -72,19 +70,13 @@ class PlayerService:
             balances["Balance"], errors="coerce"
         ).fillna(0.0)
 
-        # -------------------------
         # 4. Merge players + handicaps
-        # -------------------------
         df = df_players.merge(df_hcaps, on="Player", how="left")
 
-        # -------------------------
         # 5. Merge balances
-        # -------------------------
         df = df.merge(balances[["Player", "Balance"]], on="Player", how="left")
 
-        # -------------------------
         # 6. Round numeric columns (safe)
-        # -------------------------
         if "CurrentHandicap" in df.columns:
             df["CurrentHandicap"] = pd.to_numeric(
                 df["CurrentHandicap"], errors="coerce"
@@ -94,11 +86,8 @@ class PlayerService:
         df["Balance"] = pd.to_numeric(df["Balance"], errors="coerce").fillna(0.0)
         df["Balance"] = df["Balance"].round(2)
 
-        # -------------------------
         # 7. Final ordering
-        # -------------------------
         df = df.sort_values("Player").reset_index(drop=True)
-
         return df
 
     # ----------------------------------------------------------------------

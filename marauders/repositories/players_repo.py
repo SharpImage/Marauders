@@ -131,3 +131,24 @@ class PlayerRepository:
 
     def deactivate_player(self, player: str) -> None:
         self.update_player(player, Active="NO")
+
+    def get_active_players(self) -> pd.DataFrame:
+        """
+        Return only players marked as Active = 'YES'.
+        """
+        df = self.get_all().copy()
+        if "Active" not in df.columns:
+            return df  # fallback: no active flag, return all
+
+        df["Active"] = df["Active"].astype(str).str.strip().str.upper()
+        return df[df["Active"] == "YES"].copy()
+
+    def get_active_player_names(self) -> list:
+        """
+        Convenience helper: returns list of active player names.
+        """
+        df_active = self.get_active_players()
+        if "Player" not in df_active.columns:
+            return []
+        return df_active["Player"].tolist()
+

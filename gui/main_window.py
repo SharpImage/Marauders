@@ -3,10 +3,11 @@
 from PySide6.QtWidgets import (
     QMainWindow, QTabWidget, QMessageBox, QFileDialog
 )
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
 from marauders.manager import MaraudersManager
+
 from gui.tabs.tab_dashboard import DashboardTab
 from gui.tabs.tab_scores import ScoresTab
 from gui.tabs.tab_handicaps import HandicapsTab
@@ -15,6 +16,7 @@ from gui.tabs.tab_finance import FinanceTab
 from gui.tabs.tab_players import PlayersTab
 from gui.tabs.tab_games import GamesTab
 from gui.tabs.tab_settings import SettingsTab
+from gui.tabs.tab_reports import ReportsTab
 
 
 class MainWindow(QMainWindow):
@@ -24,7 +26,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Marauders Golf System")
         self.setMinimumSize(1200, 800)
 
-        # Default manager setup (master file set in Settings tab later)
+        # Create the manager (master file set later through Settings tab)
         self.manager = MaraudersManager(db_path="marauders.db")
 
         self._create_menu()
@@ -36,6 +38,7 @@ class MainWindow(QMainWindow):
     def _create_menu(self):
         menubar = self.menuBar()
 
+        # ---- File Menu ----
         file_menu = menubar.addMenu("File")
 
         open_master = QAction("Set Master File...", self)
@@ -48,6 +51,7 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
+        # ---- Tools Menu ----
         tools_menu = menubar.addMenu("Tools")
 
         run_all = QAction("Run Full Update", self)
@@ -71,8 +75,9 @@ class MainWindow(QMainWindow):
         self.tab_players = PlayersTab(self.manager)
         self.tab_games = GamesTab(self.manager)
         self.tab_settings = SettingsTab(self.manager, self)
+        self.tab_reports = ReportsTab(self.manager)
 
-        # Add to tab widget
+        # Add tabs to widget
         self.tabs.addTab(self.tab_dashboard, "Dashboard")
         self.tabs.addTab(self.tab_scores, "Scores")
         self.tabs.addTab(self.tab_handicaps, "Handicaps")
@@ -81,6 +86,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.tab_players, "Players")
         self.tabs.addTab(self.tab_games, "Games")
         self.tabs.addTab(self.tab_settings, "Settings")
+        self.tabs.addTab(self.tab_reports, "Reports")
 
         self.setCentralWidget(self.tabs)
 
@@ -92,7 +98,7 @@ class MainWindow(QMainWindow):
             self,
             "Select Master Excel File",
             "",
-            "Excel Files (*.xlsx)",
+            "Excel Files (*.xlsx)"
         )
         if path:
             self.manager.set_master_file(path)
@@ -100,7 +106,7 @@ class MainWindow(QMainWindow):
 
     def run_full_update(self):
         try:
-            result = self.manager.run_full_update()
+            self.manager.run_full_update()
             QMessageBox.information(self, "Success", "Full update completed.")
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))

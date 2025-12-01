@@ -4,54 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1bf1384-261b-4d7a-8c1c-04158c818443" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/MaraudersGolfSystem.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/debug_finance_by_game.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/dataframes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/dialogs/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/dialogs/add_player_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/dialogs/add_transaction_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/dialogs/edit_player_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/main_window.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_dashboard.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_finance.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_games.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_handicaps.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_players.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_prizes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_scores.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_settings.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders.db" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/database.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/manager.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/finance_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/games_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/handicaps_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/players_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/prizes_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/repositories/scores_repo.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/finance_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/game_report_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/game_summary_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/handicap_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/import_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/player_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/services/prize_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/marauders/utils/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run_gui.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/show_tables.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test_marauders_cli.py" afterDir="false" />
+    <list default="true" id="a1bf1384-261b-4d7a-8c1c-04158c818443" name="Changes" comment="This is the first commit after checking system works">
+      <change afterPath="$PROJECT_DIR$/find_dashboard.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gui/tabs/tab_reports.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/dataframes.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/dataframes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/tabs/tab_dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/tabs/tab_dashboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/tabs/tab_games.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/tabs/tab_games.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/tabs/tab_handicaps.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/tabs/tab_handicaps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders.db" beforeDir="false" afterPath="$PROJECT_DIR$/marauders.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/repositories/games_repo.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/repositories/games_repo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/repositories/handicaps_repo.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/repositories/handicaps_repo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/repositories/players_repo.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/repositories/players_repo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/services/handicap_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/services/handicap_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/marauders/services/player_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/services/player_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,9 +56,14 @@
     "Python.debug_finance_by_game.executor": "Run",
     "Python.debug_game_finance.executor": "Run",
     "Python.excel_to_sqlite.executor": "Run",
+    "Python.find_dashboard.executor": "Run",
+    "Python.handicap_service.executor": "Run",
+    "Python.handicaps_repo.executor": "Run",
+    "Python.import_service.executor": "Run",
     "Python.run_gui.executor": "Run",
     "Python.scores_repo.executor": "Run",
     "Python.show_tables.executor": "Run",
+    "Python.tab_dashboard.executor": "Run",
     "Python.tab_finance.executor": "Run",
     "Python.test.executor": "Run",
     "Python.test_marauders_cli.executor": "Run",
@@ -169,22 +143,40 @@
       <updated>1764438899395</updated>
       <workItem from="1764438900465" duration="6836000" />
       <workItem from="1764498488042" duration="31471000" />
-      <workItem from="1764585093120" duration="3326000" />
+      <workItem from="1764585093120" duration="22933000" />
     </task>
+    <task id="LOCAL-00001" summary="This is the first commit after checking system works">
+      <option name="closed" value="true" />
+      <created>1764588841669</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1764588841669</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="This is the first commit after checking system works" />
+    <option name="LAST_COMMIT_MESSAGE" value="This is the first commit after checking system works" />
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$debug_finance_by_game.coverage" NAME="debug_finance_by_game Coverage Results" MODIFIED="1764516203514" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$test.coverage" NAME="test Coverage Results" MODIFIED="1764585950440" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$test.coverage" NAME="test Coverage Results" MODIFIED="1764606673910" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$excel_to_sqlite.coverage" NAME="excel_to_sqlite Coverage Results" MODIFIED="1764532377580" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$test_marauders_cli.coverage" NAME="test_marauders_cli Coverage Results" MODIFIED="1764585118933" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$tab_finance.coverage" NAME="tab_finance Coverage Results" MODIFIED="1764521925734" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/gui/tabs" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$show_tables.coverage" NAME="show_tables Coverage Results" MODIFIED="1764526010983" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$find_dashboard.coverage" NAME="find_dashboard Coverage Results" MODIFIED="1764602500258" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$handicap_service.coverage" NAME="handicap_service Coverage Results" MODIFIED="1764611519190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/services" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$debug_game_finance.coverage" NAME="debug_game_finance Coverage Results" MODIFIED="1764515515792" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$run_gui.coverage" NAME="run_gui Coverage Results" MODIFIED="1764618990400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$import_service.coverage" NAME="import_service Coverage Results" MODIFIED="1764618980647" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/services" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$tab_dashboard.coverage" NAME="tab_dashboard Coverage Results" MODIFIED="1764603847430" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/gui/tabs" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$debug_finance_by_game.coverage" NAME="debug_finance_by_game Coverage Results" MODIFIED="1764516203514" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$test_marauders_cli.coverage" NAME="test_marauders_cli Coverage Results" MODIFIED="1764585118933" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$handicaps_repo.coverage" NAME="handicaps_repo Coverage Results" MODIFIED="1764588994254" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/repositories" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$scores_repo.coverage" NAME="scores_repo Coverage Results" MODIFIED="1764587048728" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/repositories" />
-    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$run_gui.coverage" NAME="run_gui Coverage Results" MODIFIED="1764588074391" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

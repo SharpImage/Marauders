@@ -38,41 +38,40 @@ class HandicapRepository:
     # ----------------------------------------------------------
     # Current Handicaps
     # ----------------------------------------------------------
-    ddef get_current(self) -> pd.DataFrame:
-    """
-    Return CurrentHandicaps for ACTIVE players only.
-    Performs safe numeric rounding and fallback for fresh DB.
-    """
-    try:
-        df = self.db.read_sql("""
-            SELECT ch.Player,
-                   ch.CurrentHandicap,
-                   p.Active
-            FROM CurrentHandicaps ch
-            LEFT JOIN Players p
-                  ON ch.Player = p.Player
-        """)
-    except Exception:
-        # Table not yet created
-        return pd.DataFrame(columns=["Player", "CurrentHandicap"])
+    def get_current(self) -> pd.DataFrame:
+        """
+        Return CurrentHandicaps for ACTIVE players only.
+        Performs safe numeric rounding and fallback for fresh DB.
+        """
+        try:
+            df = self.db.read_sql("""
+                                  SELECT ch.Player,
+                                         ch.CurrentHandicap,
+                                         p.Active
+                                  FROM CurrentHandicaps ch
+                                           LEFT JOIN Players p
+                                                     ON ch.Player = p.Player
+                                  """)
+        except Exception:
+            # Table not yet created
+            return pd.DataFrame(columns=["Player", "CurrentHandicap"])
 
-    if df.empty:
-        return pd.DataFrame(columns=["Player", "CurrentHandicap"])
+        if df.empty:
+            return pd.DataFrame(columns=["Player", "CurrentHandicap"])
 
-    # Only include Active players (default to YES if missing)
-    df["Active"] = df["Active"].fillna("YES").astype(str).str.upper()
-    df = df[df["Active"] == "YES"]
+        # Only include Active players (default to YES if missing)
+        df["Active"] = df["Active"].fillna("YES").astype(str).str.upper().str.strip()
+        df = df[df["Active"] == "YES"]
 
-    # Clean and round handicap values
-    df["CurrentHandicap"] = (
-        pd.to_numeric(df["CurrentHandicap"], errors="coerce")
-        .fillna(0.0)
-        .round(1)
-    )
+        # Clean / round handicap values
+        df["CurrentHandicap"] = (
+            pd.to_numeric(df["CurrentHandicap"], errors="coerce")
+            .fillna(0.0)
+            .round(1)
+        )
 
-    df["Player"] = df["Player"].astype(str).strip()
-    return df[["Player", "CurrentHandicap"]].sort_values("Player").reset_index(drop=True)
-
+        df["Player"] = df["Player"].astype(str).str.strip()
+        return df[["Player", "CurrentHandicap"]].sort_values("Player").reset_index(drop=True)
 
     def save_current(self, current_df: pd.DataFrame) -> None:
         """Replace the CurrentHandicaps table."""

@@ -33,5 +33,5 @@ class HandicapsTab(QWidget):
         self.model.setDataFrame(result["current"])
 
     def refresh(self):
-        df = self.manager.handicap_service.hcaps_repo.get_current()
+        df = self.manager.handicap_service.get_current_handicaps()
         self.model.setDataFrame(df)

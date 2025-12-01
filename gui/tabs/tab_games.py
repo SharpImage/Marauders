@@ -1,157 +1,116 @@
 # gui/tabs/tab_games.py
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QComboBox, QLineEdit,
-    QLabel, QTableView, QMessageBox
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QTableView, QMessageBox, QDateEdit, QLineEdit
 )
+from PySide6.QtCore import Qt, QDate
+
 from gui.dataframes import DataFrameModel
 
 
 class GamesTab(QWidget):
+    """
+    GUI tab for viewing game dates and managing excluded games.
+    """
+
     def __init__(self, manager):
         super().__init__()
         self.manager = manager
 
         layout = QVBoxLayout()
 
-        # ----------------------------------------------------------------------
-        # GAME SELECTION + EXCLUDE/INCLUDE
-        # ----------------------------------------------------------------------
-        top_row = QHBoxLayout()
+        # -------------------------------------------------------------
+        # GAME DATES TABLE
+        # -------------------------------------------------------------
+        layout.addWidget(QLabel("All Game Dates"))
+        self.table_dates = QTableView()
+        self.model_dates = DataFrameModel()
+        self.table_dates.setModel(self.model_dates)
+        layout.addWidget(self.table_dates)
 
-        self.cmb_dates = QComboBox()
-        top_row.addWidget(QLabel("Select Game:"))
-        top_row.addWidget(self.cmb_dates)
-
-        self.txt_reason = QLineEdit()
-        self.txt_reason.setPlaceholderText("Reason for exclusion (optional)")
-        top_row.addWidget(self.txt_reason)
-
-        btn_exclude = QPushButton("Exclude Game")
-        btn_exclude.clicked.connect(self.exclude_game)
-        top_row.addWidget(btn_exclude)
-
-        btn_include = QPushButton("Include Game")
-        btn_include.clicked.connect(self.include_game)
-        top_row.addWidget(btn_include)
-
-        btn_refresh = QPushButton("Refresh")
-        btn_refresh.clicked.connect(self.refresh_all)
-        top_row.addWidget(btn_refresh)
-
-        layout.addLayout(top_row)
-
-        # ----------------------------------------------------------------------
+        # -------------------------------------------------------------
         # EXCLUDED GAMES TABLE
-        # ----------------------------------------------------------------------
-        layout.addWidget(QLabel("<b>Excluded Games:</b>"))
+        # -------------------------------------------------------------
+        layout.addWidget(QLabel("Excluded Games"))
         self.table_excluded = QTableView()
         self.model_excluded = DataFrameModel()
         self.table_excluded.setModel(self.model_excluded)
         layout.addWidget(self.table_excluded)
 
-        # ----------------------------------------------------------------------
-        # GAME SUMMARY SECTION
-        # ----------------------------------------------------------------------
-        layout.addWidget(QLabel("<h3>Game Summary</h3>"))
+        # -------------------------------------------------------------
+        # CONTROLS
+        # -------------------------------------------------------------
+        control_layout = QHBoxLayout()
 
-        btn_summary = QPushButton("Load Summary for Selected Game")
-        btn_summary.clicked.connect(self.show_summary)
-        layout.addWidget(btn_summary)
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDate(QDate.currentDate())
+        control_layout.addWidget(self.date_edit)
 
-        # SCORES TABLE
-        layout.addWidget(QLabel("<b>Scores</b>"))
-        self.table_scores = QTableView()
-        self.model_scores = DataFrameModel()
-        self.table_scores.setModel(self.model_scores)
-        layout.addWidget(self.table_scores)
+        self.reason_edit = QLineEdit()
+        self.reason_edit.setPlaceholderText("Reason for exclusion")
+        control_layout.addWidget(self.reason_edit)
 
-        # HANDICAP CHANGES TABLE
-        layout.addWidget(QLabel("<b>Handicap Changes</b>"))
-        self.table_hcaps = QTableView()
-        self.model_hcaps = DataFrameModel()
-        self.table_hcaps.setModel(self.model_hcaps)
-        layout.addWidget(self.table_hcaps)
+        btn_add = QPushButton("Exclude Game")
+        btn_add.clicked.connect(self.exclude_game)
+        control_layout.addWidget(btn_add)
 
-        # PRIZE PAYOUTS TABLE
-        layout.addWidget(QLabel("<b>Prize Payouts</b>"))
-        self.table_prizes = QTableView()
-        self.model_prizes = DataFrameModel()
-        self.table_prizes.setModel(self.model_prizes)
-        layout.addWidget(self.table_prizes)
+        btn_remove = QPushButton("Remove Exclusion")
+        btn_remove.clicked.connect(self.remove_exclusion)
+        control_layout.addWidget(btn_remove)
+
+        layout.addLayout(control_layout)
 
         self.setLayout(layout)
 
-        # INITIAL LOAD
+        # Initial load
         self.refresh_all()
 
-    # ----------------------------------------------------------------------
-    # REFRESH FUNCTIONS
-    # ----------------------------------------------------------------------
-    def refresh_dates(self):
-        dates = self.manager.get_all_game_dates()
-        self.cmb_dates.clear()
-        for d in dates:
-            self.cmb_dates.addItem(str(d))
-
-    def refresh_excluded(self):
-        df = self.manager.get_excluded_games()
-        self.model_excluded.setDataFrame(df)
-
+    # ------------------------------------------------------------------
     def refresh_all(self):
         self.refresh_dates()
         self.refresh_excluded()
-        self.clear_summary()
-        self.txt_reason.clear()
 
-    # ----------------------------------------------------------------------
-    # CLEAR SUMMARY TABLES
-    # ----------------------------------------------------------------------
-    def clear_summary(self):
-        self.model_scores.setDataFrame(None)
-        self.model_hcaps.setDataFrame(None)
-        self.model_prizes.setDataFrame(None)
+    # ------------------------------------------------------------------
+    def refresh_dates(self):
+        dates = self.manager.game_repo.get_all_game_dates()
+        df = None
+        if dates:
+            df = DataFrameModel._build_dataframe(["GameDate"], dates)
+        else:
+            df = DataFrameModel._build_dataframe(["GameDate"], [])
 
-    # ----------------------------------------------------------------------
-    # EXCLUDE GAME
-    # ----------------------------------------------------------------------
+        self.model_dates.setDataFrame(df)
+
+    # ------------------------------------------------------------------
+    def refresh_excluded(self):
+        df = self.manager.game_repo.get_excluded_games_table()
+        self.model_excluded.setDataFrame(df)
+
+    # ------------------------------------------------------------------
     def exclude_game(self):
-        date = self.cmb_dates.currentText()
-        reason = self.txt_reason.text().strip()
+        game_date = self.date_edit.date().toPython()
+        reason = self.reason_edit.text().strip()
+
+        if not reason:
+            QMessageBox.warning(self, "Error", "Reason must be provided.")
+            return
 
         try:
-            self.manager.exclude_game(date, reason)
-            QMessageBox.information(self, "Game Excluded", f"{date} excluded.")
+            self.manager.game_repo.add_excluded_game(game_date, reason)
+            QMessageBox.information(self, "Success", "Game excluded.")
             self.refresh_all()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    # ----------------------------------------------------------------------
-    # INCLUDE GAME
-    # ----------------------------------------------------------------------
-    def include_game(self):
-        date = self.cmb_dates.currentText()
+    # ------------------------------------------------------------------
+    def remove_exclusion(self):
+        game_date = self.date_edit.date().toPython()
 
         try:
-            self.manager.include_game(date)
-            QMessageBox.information(self, "Game Included", f"{date} included.")
+            self.manager.game_repo.remove_excluded_game(game_date)
+            QMessageBox.information(self, "Success", "Exclusion removed.")
             self.refresh_all()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-
-    # ----------------------------------------------------------------------
-    # GAME SUMMARY
-    # ----------------------------------------------------------------------
-    def show_summary(self):
-        date = self.cmb_dates.currentText()
-
-        try:
-            summary = self.manager.build_game_summary(date)
-
-            self.model_scores.setDataFrame(summary["scores"])
-            self.model_hcaps.setDataFrame(summary["handicaps"])
-            self.model_prizes.setDataFrame(summary["prizes"])
-
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))

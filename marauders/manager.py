@@ -139,12 +139,8 @@ class MaraudersManager:
     # ------------------------------------------------------------------
     # 5) Player status + management
     # ------------------------------------------------------------------
-    def get_player_status(self) -> pd.DataFrame:
-        """
-        Player status table:
-            Player | Handicap | Balance
-        """
-        return self.player_service.build_player_status_table()
+    def get_player_status(self, include_inactive: bool = False):
+        return self.player_service.build_player_status_table(include_inactive=include_inactive)
 
     def add_player(
         self,
@@ -265,5 +261,42 @@ class MaraudersManager:
 
         return results
 
+    # ------------------------------------------------------------------
+    # 9) Reports
+    # ------------------------------------------------------------------
     def build_game_report_html(self, game_date: date) -> str:
         return self.game_report_service.build_game_report_html(game_date)
+
+    def build_handicap_report_html(self):
+        df = self.handicap_service.get_current_handicaps()
+        html = df.to_html(index=False)
+
+        return f"""
+        <html>
+        <head><title>Current Handicaps</title></head>
+        <body>
+            <h1>Current Handicaps</h1>
+            {html}
+        </body>
+        </html>
+        """
+
+    def build_balances_report_html(self):
+        finance = self.finance_service.rebuild_finance()
+        balances = finance.balances.copy()
+        balances = balances.sort_values("Player")
+
+        html = balances.to_html(index=False)
+
+        return f"""
+        <html>
+        <head><title>Player Balances</title></head>
+        <body>
+            <h1>Player Balances</h1>
+            {html}
+            <h3>Kitty: £{finance.kitty_total:.2f}</h3>
+        </body>
+        </html>
+        """
+
+

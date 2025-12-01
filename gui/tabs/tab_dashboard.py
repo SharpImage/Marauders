@@ -1,8 +1,8 @@
 # gui/tabs/tab_dashboard.py
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout
-from PySide6.QtCore import Qt
-
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QCheckBox
+)
 
 class DashboardTab(QWidget):
     def __init__(self, manager):
@@ -11,54 +11,92 @@ class DashboardTab(QWidget):
 
         layout = QVBoxLayout()
 
-        title = QLabel("<h1>Marauders Golf System</h1>")
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
+        # -------------------------------------------------
+        # Checkbox: include inactive players in counts
+        # -------------------------------------------------
+        self.chk_inactive = QCheckBox("Include inactive players")
+        self.chk_inactive.setChecked(False)
+        self.chk_inactive.stateChanged.connect(self.refresh_dashboard)
+        layout.addWidget(self.chk_inactive)
 
-        subtitle = QLabel("<h3>System Overview</h3>")
-        subtitle.setAlignment(Qt.AlignCenter)
-        layout.addWidget(subtitle)
-
-        grid = QGridLayout()
-        layout.addLayout(grid)
-
+        # -------------------------------------------------
         # Summary labels
-        self.lbl_players = QLabel("")
-        self.lbl_games = QLabel("")
-        self.lbl_handicaps = QLabel("")
-        self.lbl_balances = QLabel("")
+        # -------------------------------------------------
+        self.lbl_total_players = QLabel()
+        self.lbl_active_players = QLabel()
+        self.lbl_inactive_players = QLabel()
+        self.lbl_num_games = QLabel()
+        self.lbl_last_game = QLabel()
+        self.lbl_total_prizes = QLabel()
+        self.lbl_total_game_fees = QLabel()
+        self.lbl_kitty = QLabel()
 
-        grid.addWidget(QLabel("Active Players:"), 0, 0)
-        grid.addWidget(self.lbl_players, 0, 1)
-
-        grid.addWidget(QLabel("Games Played:"), 1, 0)
-        grid.addWidget(self.lbl_games, 1, 1)
-
-        grid.addWidget(QLabel("Handicap Records:"), 2, 0)
-        grid.addWidget(self.lbl_handicaps, 2, 1)
-
-        grid.addWidget(QLabel("Finance Entries:"), 3, 0)
-        grid.addWidget(self.lbl_balances, 3, 1)
-
-        btn_refresh = QPushButton("Refresh Dashboard")
-        btn_refresh.clicked.connect(self.refresh_dashboard)
-        layout.addWidget(btn_refresh)
+        for lbl in [
+            self.lbl_total_players, self.lbl_active_players, self.lbl_inactive_players,
+            self.lbl_num_games, self.lbl_last_game, self.lbl_total_prizes,
+            self.lbl_total_game_fees, self.lbl_kitty
+        ]:
+            layout.addWidget(lbl)
 
         self.setLayout(layout)
+
         self.refresh_dashboard()
 
+    # ---------------------------------------------------------
+    # Dashboard summary
+    # ---------------------------------------------------------
     def refresh_dashboard(self):
-        # Player count
-        players = self.manager.get_player_status()
-        self.lbl_players.setText(str(len(players)))
 
-        # Games played
-        self.lbl_games.setText(str(len(self.manager.get_valid_game_dates())))
+        include_inactive = self.chk_inactive.isChecked()
 
-        # Handicap history count
-        h = self.manager.handicap_service.hcaps_repo.get_history()
-        self.lbl_handicaps.setText(str(len(h)))
+        # -----------------------------------------
+        # PLAYERS
+        # -----------------------------------------
+        players_df = self.manager.player_service.players_repo.get_all()
+        active_df = players_df[players_df["Active"].str.upper() == "YES"]
+        inactive_df = players_df[players_df["Active"].str.upper() != "YES"]
 
-        # Finance ledger
-        ledger = self.manager.finance_service.finance_repo.get_ledger()
-        self.lbl_balances.setText(str(len(ledger)))
+        if include_inactive:
+            count_players = len(players_df)
+        else:
+            count_players = len(active_df)
+
+        self.lbl_total_players.setText(f"Total players: {len(players_df)}")
+        self.lbl_active_players.setText(f"Active players: {len(active_df)}")
+        self.lbl_inactive_players.setText(f"Inactive players: {len(inactive_df)}")
+
+        # -----------------------------------------
+        # GAME COUNT
+        # -----------------------------------------
+        dates = self.manager.scores_repo.get_game_dates()
+        num_games = len(dates)
+        last_game = dates[-1] if num_games > 0 else "N/A"
+
+        self.lbl_num_games.setText(f"Games recorded: {num_games}")
+        self.lbl_last_game.setText(f"Last game date: {last_game}")
+
+        # -----------------------------------------
+        # FINANCE SUMMARY
+        # -----------------------------------------
+        finance = self.manager.finance_service.rebuild_finance()
+
+        kitty = getattr(finance, "kitty_total", 0.0)
+
+        # INITIAL VALUES
+        total_prizes = 0.0
+        total_game_fees = 0.0
+
+        # Extract from ledger if available
+        if hasattr(finance, "ledger") and finance.ledger is not None:
+            df_ledger = finance.ledger
+
+            if not df_ledger.empty:
+                if "Prizes" in df_ledger.columns:
+                    total_prizes = df_ledger["Prizes"].fillna(0).sum()
+
+                if "GameFee" in df_ledger.columns:
+                    total_game_fees = df_ledger["GameFee"].fillna(0).sum()
+
+        self.lbl_total_prizes.setText(f"Total prizes awarded: £{total_prizes:.2f}")
+        self.lbl_total_game_fees.setText(f"Total game fees collected: £{total_game_fees:.2f}")
+        self.lbl_kitty.setText(f"Kitty balance: £{kitty:.2f}")
