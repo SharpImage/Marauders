@@ -18,6 +18,7 @@ class Database:
 
     def __init__(self, db_path: str = "marauders.db"):
         self.db_path = Path(db_path)
+        self._init_settings_table()
 
         if not self.db_path.exists():
             raise DatabaseNotFoundError(
@@ -90,6 +91,41 @@ class Database:
         with self.connect() as conn:
             if_exists = "replace" if replace else "append"
             df.to_sql(table_name, conn, if_exists=if_exists, index=index)
+
+    def _init_settings_table(self):
+        """Ensure the Settings table exists."""
+        import sqlite3
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                         CREATE TABLE IF NOT EXISTS Settings
+                         (
+                             Key
+                             TEXT
+                             PRIMARY
+                             KEY,
+                             Value
+                             TEXT
+                         )
+                         """)
+            conn.commit()
+
+    def get_setting(self, key: str):
+        import sqlite3
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT Value FROM Settings WHERE Key = ?", (key,))
+            row = cur.fetchone()
+            return None if row is None else row[0]
+
+    def set_setting(self, key: str, value: str):
+        import sqlite3
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                         INSERT INTO Settings (Key, Value)
+                         VALUES (?, ?) ON CONFLICT(Key) DO
+                         UPDATE SET Value = excluded.Value
+                         """, (key, value))
+            conn.commit()
 
     # ----------------------------------------------------------
     # Utility helpers

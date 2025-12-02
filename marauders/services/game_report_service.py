@@ -356,7 +356,7 @@ class GameReportService:
         # NTP / In-2
         if not data.ntp_table.empty:
             html.append("<div class='section'>")
-            html.append("<h3>Nearest The Pin / In-2 Results</h3>")
+            html.append("<h3>Nearest The Pin Results</h3>")
             html.append(self._df_to_html_table(data.ntp_table))
             html.append("</div>")
 

@@ -45,8 +45,11 @@ class MaraudersManager:
         self.db = Database(db_path)
         self.game_report_service = GameReportService(self.db)
 
-        self.master_file = Path(master_file) if master_file is not None else None
-
+        saved = self.db.get_setting("master_file")
+        if saved:
+            self.master_file = saved
+        else:
+            self.master_file = master_file
         # Core repositories/services
         self.game_repo = GameRepository(self.db)
 
@@ -64,9 +67,18 @@ class MaraudersManager:
     # Configuration helpers
     # ------------------------------------------------------------------
     def set_master_file(self, master_file: str):
-        """Update the MASTER_FILE path used for importing scores."""
-        self.master_file = Path(master_file)
-        self.import_service = ImportService(self.db, str(self.master_file))
+        """Set the master file path or URL and persist it."""
+        # Do NOT wrap in Path() because URLs will break
+        self.master_file = master_file
+
+        # Save to database
+        self.db.set_setting("master_file", master_file)
+
+        # Recreate ImportService only if master_file is set
+        if master_file and master_file.strip():
+            self.import_service = ImportService(self.db, master_file)
+        else:
+            self.import_service = None
 
     # ------------------------------------------------------------------
     # 1) Import new scores

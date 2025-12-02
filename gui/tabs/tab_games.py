@@ -1,10 +1,9 @@
 # gui/tabs/tab_games.py
-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableView, QMessageBox, QDateEdit, QLineEdit
+    QTableView, QMessageBox, QComboBox, QLineEdit
 )
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt
 
 from gui.dataframes import DataFrameModel
 
@@ -12,6 +11,8 @@ from gui.dataframes import DataFrameModel
 class GamesTab(QWidget):
     """
     GUI tab for viewing game dates and managing excluded games.
+    Restores the original stable behaviour using combo boxes
+    instead of QDateEdit, to ensure consistent ISO string matching.
     """
 
     def __init__(self, manager):
@@ -21,7 +22,7 @@ class GamesTab(QWidget):
         layout = QVBoxLayout()
 
         # -------------------------------------------------------------
-        # GAME DATES TABLE
+        # ALL GAME DATES TABLE
         # -------------------------------------------------------------
         layout.addWidget(QLabel("All Game Dates"))
         self.table_dates = QTableView()
@@ -39,48 +40,45 @@ class GamesTab(QWidget):
         layout.addWidget(self.table_excluded)
 
         # -------------------------------------------------------------
-        # CONTROLS
+        # CONTROLS (Restored original working behaviour)
         # -------------------------------------------------------------
         control_layout = QHBoxLayout()
 
-        self.date_edit = QDateEdit()
-        self.date_edit.setCalendarPopup(True)
-        self.date_edit.setDate(QDate.currentDate())
-        control_layout.addWidget(self.date_edit)
+        # DROP-DOWN: Select game date to exclude
+        self.combo_dates = QComboBox()
+        control_layout.addWidget(self.combo_dates)
 
+        # ENTER REASON
         self.reason_edit = QLineEdit()
         self.reason_edit.setPlaceholderText("Reason for exclusion")
         control_layout.addWidget(self.reason_edit)
 
-        btn_add = QPushButton("Exclude Game")
+        # BUTTON: Add exclusion
+        btn_add = QPushButton("Exclude Selected Game")
         btn_add.clicked.connect(self.exclude_game)
         control_layout.addWidget(btn_add)
 
-        btn_remove = QPushButton("Remove Exclusion")
+        # BUTTON: Remove exclusion
+        btn_remove = QPushButton("Remove Selected Exclusion")
         btn_remove.clicked.connect(self.remove_exclusion)
         control_layout.addWidget(btn_remove)
 
         layout.addLayout(control_layout)
-
         self.setLayout(layout)
 
-        # Initial load
+        # Initial refresh
         self.refresh_all()
 
     # ------------------------------------------------------------------
     def refresh_all(self):
         self.refresh_dates()
         self.refresh_excluded()
+        self.refresh_comboboxes()
 
     # ------------------------------------------------------------------
     def refresh_dates(self):
         dates = self.manager.game_repo.get_all_game_dates()
-        df = None
-        if dates:
-            df = DataFrameModel._build_dataframe(["GameDate"], dates)
-        else:
-            df = DataFrameModel._build_dataframe(["GameDate"], [])
-
+        df = DataFrameModel._build_dataframe(["GameDate"], dates)
         self.model_dates.setDataFrame(df)
 
     # ------------------------------------------------------------------
@@ -89,28 +87,52 @@ class GamesTab(QWidget):
         self.model_excluded.setDataFrame(df)
 
     # ------------------------------------------------------------------
+    def refresh_comboboxes(self):
+        """Refresh the dropdowns for selecting dates."""
+        self.combo_dates.clear()
+
+        # Load available game dates
+        all_dates = self.manager.game_repo.get_all_game_dates()
+
+        # Convert to strings
+        all_dates = [str(d) for d in all_dates]
+
+        # Populate dropdown
+        for d in all_dates:
+            self.combo_dates.addItem(d)
+
+    # ------------------------------------------------------------------
     def exclude_game(self):
-        game_date = self.date_edit.date().toPython()
+        game_date = self.combo_dates.currentText().strip()
         reason = self.reason_edit.text().strip()
 
+        if not game_date:
+            QMessageBox.warning(self, "Error", "No game date selected.")
+            return
+
         if not reason:
-            QMessageBox.warning(self, "Error", "Reason must be provided.")
+            QMessageBox.warning(self, "Error", "A reason is required.")
             return
 
         try:
             self.manager.game_repo.add_excluded_game(game_date, reason)
-            QMessageBox.information(self, "Success", "Game excluded.")
+            QMessageBox.information(self, "Success", f"Excluded {game_date}")
             self.refresh_all()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
     # ------------------------------------------------------------------
     def remove_exclusion(self):
-        game_date = self.date_edit.date().toPython()
+        """Remove exclusion for the currently selected game date in the combo box."""
+        game_date = self.combo_dates.currentText().strip()
+
+        if not game_date:
+            QMessageBox.warning(self, "Error", "No game date selected.")
+            return
 
         try:
             self.manager.game_repo.remove_excluded_game(game_date)
-            QMessageBox.information(self, "Success", "Exclusion removed.")
+            QMessageBox.information(self, "Success", f"Exclusion removed for {game_date}")
             self.refresh_all()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))

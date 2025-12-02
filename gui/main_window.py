@@ -74,7 +74,7 @@ class MainWindow(QMainWindow):
         self.tab_finance = FinanceTab(self.manager)
         self.tab_players = PlayersTab(self.manager)
         self.tab_games = GamesTab(self.manager)
-        self.tab_settings = SettingsTab(self.manager, self)
+        self.tab_settings = SettingsTab(self.manager)
         self.tab_reports = ReportsTab(self.manager)
 
         # Add tabs to widget

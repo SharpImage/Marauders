@@ -72,9 +72,9 @@ class GameRepository:
     # --------------------------------------------------------------
     # REMOVE EXCLUDED GAME
     # --------------------------------------------------------------
-    def remove_excluded_game(self, game_date: date):
-        df = self.db.get_table("ExcludedGames").copy()
-        df["GameDate"] = pd.to_datetime(df["GameDate"], errors="coerce").dt.date
-
-        df = df[df["GameDate"] != game_date]
-        self.db.write_table("ExcludedGames", df, replace=True)
+    def remove_excluded_game(self, game_date):
+        date_str = str(game_date)
+        self.db.execute(
+            "DELETE FROM ExcludedGames WHERE GameDate = ?",
+            (date_str,),
+        )
