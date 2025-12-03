@@ -147,16 +147,56 @@ class PrizeService:
     # ------------------------------------------------------------------
     # INTERNAL HELPERS
     # ------------------------------------------------------------------
-    def _load_valid_scores(self) -> pd.DataFrame:
+
+    def _load_valid_scores(self):
         """
-        Returns all Scores rows excluding dates in ExcludedGames.
+        Load scores that are valid for prize calculations:
+          - from Scores table
+          - exclude any game dates listed in ExcludedGames
         """
-        scores = self.scores_repo.get_all()
-        excluded = self.games_repo.get_excluded_game_dates()
-        if not excluded.empty:
-            excluded_dates = set(excluded["GameDate"].tolist())
-            scores = scores[~scores[self.SCORES_DATE_COL].isin(excluded_dates)]
-        return scores
+        df = self.db.get_table("Scores")
+        if df.empty:
+            return df
+
+        import pandas as pd
+
+        # Clean up Score fields
+        df["Game_Date"] = pd.to_datetime(df["Game_Date"], errors="coerce").dt.date
+        df["Player_Name"] = df["Player_Name"].astype(str).str.strip()
+        df = df.dropna(subset=["Game_Date", "Player_Name"])
+
+        # ----------------------------------------
+        # Load excluded dates properly
+        # ----------------------------------------
+        excluded_dates = []
+
+        # Preferred: list-based API
+        if hasattr(self.games_repo, "get_excluded_game_dates"):
+            raw = self.games_repo.get_excluded_game_dates()
+            excluded_dates = [
+                pd.to_datetime(d).date()
+                for d in raw
+                if d is not None and str(d).strip() != ""
+            ]
+
+        # Fallback: full table
+        elif hasattr(self.games_repo, "get_excluded_games_table"):
+            ex_df = self.games_repo.get_excluded_games_table()
+            if not ex_df.empty and "GameDate" in ex_df.columns:
+                excluded_dates = [
+                    pd.to_datetime(d).date()
+                    for d in ex_df["GameDate"].tolist()
+                    if d is not None and str(d).strip() != ""
+                ]
+
+        # ----------------------------------------
+        # Apply exclusions
+        # ----------------------------------------
+        if excluded_dates:
+            excluded_set = set(excluded_dates)
+            df = df[~df["Game_Date"].isin(excluded_set)]
+
+        return df
 
     def _get_alloc_row(self, pa_df: pd.DataFrame, n_players: int) -> pd.Series | None:
         """
@@ -229,7 +269,7 @@ class PrizeService:
             for _, row in winners_1.iterrows():
                 records.append(
                     {
-                        "GameDate": game_date.date(),
+                        "GameDate": game_date,
                         "Category": comp_label,
                         "Place": "1st (tie)",
                         "Player": row[self.SCORES_PLAYER_COL],
@@ -244,7 +284,7 @@ class PrizeService:
         if first_prize > 0:
             records.append(
                 {
-                    "GameDate": game_date.date(),
+                    "GameDate": game_date,
                     "Category": comp_label,
                     "Place": "1st",
                     "Player": winner_1[self.SCORES_PLAYER_COL],
@@ -261,7 +301,7 @@ class PrizeService:
         for _, row in winners_2.iterrows():
             records.append(
                 {
-                    "GameDate": game_date.date(),
+                    "GameDate": game_date,
                     "Category": comp_label,
                     "Place": "2nd" if n2 == 1 else "2nd (tie)",
                     "Player": row[self.SCORES_PLAYER_COL],
@@ -310,7 +350,7 @@ class PrizeService:
                 # No winner – prize goes to KITTY
                 records.append(
                     {
-                        "GameDate": game_date.date(),
+                        "GameDate": game_date,
                         "Category": f"NTP Hole {hole}",
                         "Place": "",
                         "Player": "KITTY",
@@ -328,7 +368,7 @@ class PrizeService:
             for _, row in winners.iterrows():
                 records.append(
                     {
-                        "GameDate": game_date.date(),
+                        "GameDate": game_date,
                         "Category": f"NTP Hole {hole}",
                         "Place": "NTP",
                         "Player": row[self.SCORES_PLAYER_COL],

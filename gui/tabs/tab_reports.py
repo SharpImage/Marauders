@@ -56,8 +56,19 @@ class ReportsTab(QWidget):
     # ---------------------------------------------------
     def _load_dates(self):
         dates = self.manager.scores_repo.get_game_dates()
+
+        # Convert to proper date objects → sort newest first
+        try:
+            dates_sorted = sorted(
+                [pd.to_datetime(d).date() for d in dates],
+                reverse=True
+            )
+        except Exception:
+            # Fallback if date parsing fails
+            dates_sorted = sorted(dates, reverse=True)
+
         self.cmb_date.clear()
-        for d in dates:
+        for d in dates_sorted:
             self.cmb_date.addItem(str(d))
 
     # ---------------------------------------------------

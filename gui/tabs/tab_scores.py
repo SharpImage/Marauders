@@ -7,6 +7,7 @@ from gui.dataframes import DataFrameModel
 class ScoresTab(QWidget):
     def __init__(self, manager):
         super().__init__()
+
         self.manager = manager
 
         layout = QVBoxLayout()
@@ -18,11 +19,16 @@ class ScoresTab(QWidget):
         self.table = QTableView()
         self.model = DataFrameModel()
         self.table.setModel(self.model)
-        layout.addWidget(self.table)
 
+        # Scroll-friendly settings
+        self.table.setHorizontalScrollMode(QTableView.ScrollPerPixel)
+        self.table.setVerticalScrollMode(QTableView.ScrollPerPixel)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setVisible(False)
+
+        layout.addWidget(self.table)
         self.setLayout(layout)
 
-        # Auto-load
         self.refresh_scores()
 
     def refresh_scores(self):

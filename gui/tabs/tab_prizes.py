@@ -22,16 +22,28 @@ class PrizesTab(QWidget):
         self.table = QTableView()
         self.model = DataFrameModel()
         self.table.setModel(self.model)
-        layout.addWidget(self.table)
 
+        # Scroll-friendly improvements
+        self.table.setHorizontalScrollMode(QTableView.ScrollPerPixel)
+        self.table.setVerticalScrollMode(QTableView.ScrollPerPixel)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setVisible(False)
+
+        layout.addWidget(self.table)
         self.setLayout(layout)
 
         self.refresh()
 
+    # ------------------------------------------------------------------
     def compute(self):
-        result = self.manager.compute_prizes()
-        self.model.setDataFrame(result["payouts"])
+        """Recompute all prize payouts and refresh the table."""
+        result = self.manager.prize_service.compute_all_prizes()
+        df = result["payouts"]
+        self.model.setDataFrame(df)
 
+    # ------------------------------------------------------------------
     def refresh(self):
-        df = self.manager.prize_service.prizes_repo.get_all_payouts()
+        """Refresh by recomputing in-memory results."""
+        result = self.manager.prize_service.compute_all_prizes()
+        df = result["payouts"]
         self.model.setDataFrame(df)

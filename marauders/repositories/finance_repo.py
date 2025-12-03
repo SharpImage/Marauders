@@ -119,3 +119,17 @@ class FinanceRepository:
 
         return latest
 
+    def get_player_transactions(self):
+        """
+        Return the PlayerTransactions table as a DataFrame.
+        Fields expected: Date, Player, PaidIn, PaidOut, Description.
+        """
+        try:
+            df = self.db.get_table("PlayerTransactions").copy()
+            return df
+        except Exception:
+            return pd.DataFrame(columns=["Date", "Player", "PaidIn", "PaidOut", "Description"])
+
+
+
+
