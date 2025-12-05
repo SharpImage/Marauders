@@ -16,6 +16,8 @@ from gui.tabs.tab_players import PlayersTab
 from gui.tabs.tab_games import GamesTab
 from gui.tabs.tab_settings import SettingsTab
 from gui.tabs.tab_reports import ReportsTab
+from gui.tabs.tab_transactions import TransactionsTab
+
 
 # Scroll wrapper
 from gui.widgets.scrollable_tab import ScrollableTab
@@ -74,6 +76,7 @@ class MainWindow(QMainWindow):
         self.tab_handicaps = ScrollableTab(HandicapsTab(self.manager))
         self.tab_prizes = ScrollableTab(PrizesTab(self.manager))
         self.tab_finance = ScrollableTab(FinanceTab(self.manager))
+        self.tab_transactions = ScrollableTab(TransactionsTab(self.manager))
         self.tab_players = ScrollableTab(PlayersTab(self.manager))
         self.tab_games = ScrollableTab(GamesTab(self.manager))
         self.tab_settings = ScrollableTab(SettingsTab(self.manager))
@@ -85,6 +88,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.tab_handicaps, "Handicaps")
         self.tabs.addTab(self.tab_prizes, "Prizes")
         self.tabs.addTab(self.tab_finance, "Finance")
+        self.tabs.addTab(self.tab_transactions, "Transactions")
         self.tabs.addTab(self.tab_players, "Players")
         self.tabs.addTab(self.tab_games, "Games")
         self.tabs.addTab(self.tab_settings, "Settings")

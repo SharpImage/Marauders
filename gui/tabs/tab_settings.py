@@ -57,6 +57,30 @@ class SettingsTab(QWidget):
         self.lbl_status.setStyleSheet("color:#444;")
         layout.addWidget(self.lbl_status)
 
+        # ---------------------------------------------------
+        # STARTING KITTY (simple text box)
+        # ---------------------------------------------------
+        kitty_layout = QHBoxLayout()
+
+        kitty_label = QLabel("Starting Kitty (£):")
+        self.txt_kitty = QLineEdit()
+        self.txt_kitty.setPlaceholderText("Enter starting kitty amount")
+
+        # Load current kitty value from FinanceSettings
+        try:
+            current_kitty = self.manager.finance_service.finance_repo.get_starting_kitty()
+            self.txt_kitty.setText(str(current_kitty))
+        except Exception:
+            self.txt_kitty.setText("0.00")
+
+        kitty_layout.addWidget(kitty_label)
+        kitty_layout.addWidget(self.txt_kitty)
+        layout.addLayout(kitty_layout)
+
+        btn_save_kitty = QPushButton("Save Starting Kitty")
+        btn_save_kitty.clicked.connect(self.save_starting_kitty)
+        layout.addWidget(btn_save_kitty)
+
         layout.addStretch()
         self.setLayout(layout)
 
@@ -159,4 +183,33 @@ class SettingsTab(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Connection failed:\n{e}")
             self.lbl_status.setText("Connection FAILED ✘")
+
+    def save_starting_kitty(self):
+        text = self.txt_kitty.text().strip()
+
+        # Basic validation
+        try:
+            amount = float(text)
+        except ValueError:
+            QMessageBox.warning(
+                self, "Invalid Value", "Please enter a valid numeric amount."
+            )
+            return
+
+        # Write to FinanceSettings
+        try:
+            self.manager.finance_service.finance_repo.set_starting_kitty(amount)
+
+            # Recalculate finance immediately
+            self.manager.finance_service.rebuild_finance()
+
+            QMessageBox.information(
+                self,
+                "Saved",
+                f"Starting kitty updated to £{amount:.2f}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
 

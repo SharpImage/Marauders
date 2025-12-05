@@ -2,9 +2,10 @@
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableView, QMessageBox, QComboBox, QLineEdit
+    QListWidget, QListWidgetItem, QMessageBox, QDateEdit
 )
-from gui.dataframes import DataFrameModel
+from PySide6.QtCore import Qt, QDate
+from datetime import date
 
 
 class GamesTab(QWidget):
@@ -14,94 +15,116 @@ class GamesTab(QWidget):
 
         layout = QVBoxLayout()
 
-        layout.addWidget(QLabel("All Game Dates"))
-        self.table_dates = QTableView()
-        self.model_dates = DataFrameModel()
-        self.table_dates.setModel(self.model_dates)
+        # Title
+        title = QLabel("Manage Game Dates")
+        title.setStyleSheet("font-size: 16pt; font-weight: bold;")
+        layout.addWidget(title)
 
-        # Scroll-friendly
-        self.table_dates.setHorizontalScrollMode(QTableView.ScrollPerPixel)
-        self.table_dates.setVerticalScrollMode(QTableView.ScrollPerPixel)
-        self.table_dates.horizontalHeader().setStretchLastSection(True)
-        self.table_dates.verticalHeader().setVisible(False)
+        # Dates list
+        self.lst_dates = QListWidget()
+        layout.addWidget(self.lst_dates)
 
-        layout.addWidget(self.table_dates)
+        # Buttons
+        btn_layout = QHBoxLayout()
 
-        layout.addWidget(QLabel("Excluded Games"))
-        self.table_excluded = QTableView()
-        self.model_excluded = DataFrameModel()
-        self.table_excluded.setModel(self.model_excluded)
+        btn_add = QPushButton("Add Game Date")
+        btn_add.clicked.connect(self.add_game_date)
+        btn_layout.addWidget(btn_add)
 
-        self.table_excluded.setHorizontalScrollMode(QTableView.ScrollPerPixel)
-        self.table_excluded.setVerticalScrollMode(QTableView.ScrollPerPixel)
-        self.table_excluded.horizontalHeader().setStretchLastSection(True)
-        self.table_excluded.verticalHeader().setVisible(False)
+        btn_exclude = QPushButton("Exclude Selected")
+        btn_exclude.clicked.connect(self.exclude_selected)
+        btn_layout.addWidget(btn_exclude)
 
-        layout.addWidget(self.table_excluded)
+        btn_include = QPushButton("Include Selected")
+        btn_include.clicked.connect(self.include_selected)
+        btn_layout.addWidget(btn_include)
 
-        control = QHBoxLayout()
-
-        self.combo_dates = QComboBox()
-        control.addWidget(self.combo_dates)
-
-        self.reason_edit = QLineEdit()
-        self.reason_edit.setPlaceholderText("Reason for exclusion")
-        control.addWidget(self.reason_edit)
-
-        btn_add = QPushButton("Exclude Selected Game")
-        btn_add.clicked.connect(self.exclude_game)
-        control.addWidget(btn_add)
-
-        btn_remove = QPushButton("Remove Selected Exclusion")
-        btn_remove.clicked.connect(self.remove_exclusion)
-        control.addWidget(btn_remove)
-
-        layout.addLayout(control)
+        btn_layout.addStretch()
+        layout.addLayout(btn_layout)
 
         self.setLayout(layout)
-        self.refresh_all()
 
-    def refresh_all(self):
+        # Initial load
         self.refresh_dates()
-        self.refresh_excluded()
-        self.refresh_comboboxes()
 
+    # -------------------------------------------------------
+    # Refresh list
+    # -------------------------------------------------------
     def refresh_dates(self):
-        dates = self.manager.game_repo.get_all_game_dates()
-        df = DataFrameModel._build_dataframe(["GameDate"], dates)
-        self.model_dates.setDataFrame(df)
+        """Load all game dates and mark excluded ones."""
+        self.lst_dates.clear()
 
-    def refresh_excluded(self):
-        df = self.manager.game_repo.get_excluded_games_table()
-        self.model_excluded.setDataFrame(df)
+        # FIX: correct repo name
+        all_dates = self.manager.games_repo.get_all_game_dates()
+        excluded = set(self.manager.games_repo.get_excluded_game_dates())
 
-    def refresh_comboboxes(self):
-        self.combo_dates.clear()
-        dates = self.manager.game_repo.get_all_game_dates()
-        for d in dates:
-            self.combo_dates.addItem(str(d))
+        for d in all_dates:
+            text = str(d)
+            item = QListWidgetItem(text)
 
-    def exclude_game(self):
-        d = self.combo_dates.currentText().strip()
-        reason = self.reason_edit.text().strip()
+            if d in excluded:
+                item.setForeground(Qt.red)
+                item.setText(f"{text}   (Excluded)")
 
+            self.lst_dates.addItem(item)
+
+    # -------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------
+    def _get_selected_date(self):
+        item = self.lst_dates.currentItem()
+        if not item:
+            return None
+
+        text = item.text().replace("(Excluded)", "").strip()
+
+        try:
+            return date.fromisoformat(text)
+        except Exception:
+            return None
+
+    # -------------------------------------------------------
+    # Add new date
+    # -------------------------------------------------------
+    def add_game_date(self):
+        """Popup date picker and add a game date."""
+        picker = QDateEdit()
+        picker.setCalendarPopup(True)
+        picker.setDate(QDate.currentDate())
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Add Game Date")
+        msg.setText("Select the game date, then click OK.")
+        msg.layout().addWidget(picker)
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+
+        if msg.exec() == QMessageBox.Ok:
+            py_date = picker.date().toPython()
+
+            # not excluded by default
+            self.manager.games_repo.add_game_date(py_date)
+            self.refresh_dates()
+
+    # -------------------------------------------------------
+    # Exclude date
+    # -------------------------------------------------------
+    def exclude_selected(self):
+        d = self._get_selected_date()
         if not d:
-            QMessageBox.warning(self, "Error", "No game date selected.")
+            QMessageBox.warning(self, "No Selection", "Please select a date to exclude.")
             return
 
-        if not reason:
-            QMessageBox.warning(self, "Error", "A reason is required.")
-            return
+        self.manager.games_repo.exclude_game_date(d)
+        self.refresh_dates()
 
-        self.manager.game_repo.add_excluded_game(d, reason)
-        self.refresh_all()
-
-    def remove_exclusion(self):
-        d = self.combo_dates.currentText().strip()
-
+    # -------------------------------------------------------
+    # Include date
+    # -------------------------------------------------------
+    def include_selected(self):
+        d = self._get_selected_date()
         if not d:
-            QMessageBox.warning(self, "Error", "No game date selected.")
+            QMessageBox.warning(self, "No Selection", "Please select a date to include.")
             return
 
-        self.manager.game_repo.remove_excluded_game(d)
-        self.refresh_all()
+        self.manager.games_repo.include_game_date(d)
+        self.refresh_dates()

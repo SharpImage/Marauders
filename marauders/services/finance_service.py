@@ -1,263 +1,233 @@
-"""
-Completely corrected FINANCE SERVICE
-------------------------------------
-
-Fixes included:
-- Correct use of PlayerTransactions instead of FinanceLedger
-- Proper merging of game fees, prizes, and manual transactions
-- Correct kitty computation
-- Correct per-player balances
-- No accidental filtering of manual transactions
-- Full compatibility with excluded games
-- Fully cleaned and simplified logic
-"""
-
-from __future__ import annotations
-from dataclasses import dataclass
 import pandas as pd
-
-from marauders.database import Database
-from marauders.repositories.finance_repo import FinanceRepository
-from marauders.repositories.scores_repo import ScoreRepository
-from marauders.repositories.prizes_repo import PrizeRepository
-from marauders.repositories.players_repo import PlayerRepository
+import datetime
+import re
 
 
-# ======================================================================
-# RESULT STRUCTURE
-# ======================================================================
-
-@dataclass
 class FinanceResult:
-    ledger: pd.DataFrame
-    balances: pd.DataFrame
-    kitty_total: float
-    game_summary: pd.DataFrame
+    def __init__(self, ledger, balances, kitty_total, game_summary):
+        self.ledger = ledger
+        self.balances = balances
+        self.kitty_total = kitty_total
+        self.game_summary = game_summary
 
-
-# ======================================================================
-# FINANCE SERVICE
-# ======================================================================
 
 class FinanceService:
-    GAME_FEE = 2.0  # £2 per included game
 
-    def __init__(self, db: Database):
+    GAME_FEE = 2.0
+
+    def __init__(self, db, players_repo, scores_repo, prizes_repo, games_repo, finance_repo):
         self.db = db
-        self.finance_repo = FinanceRepository(db)
-        self.scores_repo = ScoreRepository(db)
-        self.prize_repo = PrizeRepository(db)
-        self.players_repo = PlayerRepository(db)
+        self.players_repo = players_repo
+        self.scores_repo = scores_repo
+        self.prizes_repo = prizes_repo
+        self.games_repo = games_repo
+        self.finance_repo = finance_repo
 
-    # ==================================================================
-    # MAIN ENTRY POINT
-    # ==================================================================
+    # =====================================================================
+    # SAFE DATE PARSER
+    # =====================================================================
+    def _safe_date(self, val):
+        """Convert any possible date representation into datetime.date or None."""
+        if isinstance(val, datetime.date):
+            return val
+
+        if isinstance(val, pd.Timestamp):
+            return val.date()
+
+        if isinstance(val, str):
+            v = val.strip()
+
+            # Fast path for ISO YYYY-MM-DD
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+                try:
+                    return datetime.date.fromisoformat(v)
+                except Exception:
+                    return None
+
+            # Fallback parser
+            parsed = pd.to_datetime(v, errors="coerce")
+            return None if pd.isna(parsed) else parsed.date()
+
+        if val is None or pd.isna(val):
+            return None
+
+        try:
+            parsed = pd.to_datetime(val, errors="coerce")
+            return None if pd.isna(parsed) else parsed.date()
+        except Exception:
+            return None
+
+    # =====================================================================
+    # NORMALISE DATE COLUMN AFTER CONCAT
+    # =====================================================================
+    def _normalise_final_dates(self, df):
+        """
+        Ensure the entire Date column is consistently datetime.date (not Timestamp),
+        and allow None values. Required before sorting.
+        """
+        df["Date"] = df["Date"].apply(self._safe_date)
+
+        # Convert all valid dates into pure datetime.date
+        df["Date"] = df["Date"].apply(
+            lambda d: None if d is None else datetime.date(d.year, d.month, d.day)
+        )
+
+        # Ensure dtype=object
+        df["Date"] = df["Date"].astype(object)
+
+        return df
+
+    # =====================================================================
+    # SAFE SORT USING python tuple key
+    # =====================================================================
+    def _sort_ledger(self, df):
+        """
+        Safe sorting that will not attempt direct comparison between None and date.
+        """
+        return df.sort_values(
+            by="Date",
+            key=lambda col: col.apply(lambda d: (d is None, d)),
+            na_position="first"
+        ).reset_index(drop=True)
+
+    # =====================================================================
+    # MAIN FINANCE REBUILD
+    # =====================================================================
     def rebuild_finance(self) -> FinanceResult:
 
-        # --------------------------------------------------------------
-        # LOAD STARTING KITTY
-        # --------------------------------------------------------------
-        starting_kitty = self.finance_repo.get_starting_kitty()
+        # ---------------------------------------------------------------
+        # LOAD SCORES
+        # ---------------------------------------------------------------
+        scores = self.scores_repo.get_all().copy()
+        scores["Game_Date"] = scores["Game_Date"].apply(self._safe_date)
 
-        # --------------------------------------------------------------
+        # ---------------------------------------------------------------
         # EXCLUDED GAMES
-        # --------------------------------------------------------------
-        try:
-            df_ex = self.db.read_sql("SELECT GameDate FROM ExcludedGames")
-            df_ex["GameDate"] = pd.to_datetime(df_ex["GameDate"], errors="coerce").dt.date
-            excluded_dates = set(df_ex["GameDate"].dropna().tolist())
-        except Exception:
-            excluded_dates = set()
+        # ---------------------------------------------------------------
+        excluded_raw = self.games_repo.get_excluded_game_dates()
+        excluded_dates = [
+            self._safe_date(x)
+            for x in excluded_raw
+            if isinstance(self._safe_date(x), datetime.date)
+        ]
 
-        # --------------------------------------------------------------
-        # SCORES
-        # --------------------------------------------------------------
-        scores_all = self.db.read_sql("""
-            SELECT Game_Date, Player_Name
-            FROM Scores
-        """)
-        scores_all["Game_Date"] = pd.to_datetime(scores_all["Game_Date"], errors="coerce").dt.date
-        scores_all["Player_Name"] = scores_all["Player_Name"].astype(str).str.strip()
-        scores_all = scores_all.dropna(subset=["Game_Date", "Player_Name"])
-
-        # Only included games count toward game fees
-        scores_all["Included"] = ~scores_all["Game_Date"].isin(excluded_dates)
-        scores_inc = scores_all[scores_all["Included"]]
-
-        # Count players per included game
-        if not scores_inc.empty:
-            per_game_players = (
-                scores_inc.groupby("Game_Date")["Player_Name"]
-                .count()
-                .reset_index()
-                .rename(columns={"Game_Date": "GameDate", "Player_Name": "Players"})
-            )
+        if excluded_dates:
+            scores["Included"] = ~scores["Game_Date"].isin(excluded_dates)
         else:
-            per_game_players = pd.DataFrame(columns=["GameDate", "Players"])
+            scores["Included"] = True
 
-        per_game_players["GameFees"] = per_game_players["Players"] * self.GAME_FEE
+        scores_inc = scores[scores["Included"]]
 
-        # --------------------------------------------------------------
+        # players per game
+        players_per_date = (
+            scores_inc.groupby("Game_Date")["Player_Name"]
+            .count()
+            .to_dict()
+        )
+
+        # ---------------------------------------------------------------
+        # GAME FEES
+        # ---------------------------------------------------------------
+        fee_rows = []
+        for game_date, players in players_per_date.items():
+            if isinstance(game_date, datetime.date):
+                fee_rows.append({
+                    "Date": game_date,
+                    "Player": "",
+                    "PaidIn": players * self.GAME_FEE,
+                    "PaidOut": 0.0,
+                    "Description": f"Game fees for {game_date}"
+                })
+
+        df_fees = pd.DataFrame(fee_rows)
+        if not df_fees.empty:
+            df_fees["Date"] = df_fees["Date"].apply(self._safe_date)
+
+        # ---------------------------------------------------------------
         # PRIZES
-        # --------------------------------------------------------------
-        try:
-            prizes_all = self.db.read_sql("""
-                SELECT GameDate, Player, Amount, Category, Place
-                FROM PrizePayouts
-            """)
-        except Exception:
-            prizes_all = pd.DataFrame(columns=["GameDate", "Player", "Amount", "Category", "Place"])
+        # ---------------------------------------------------------------
+        payouts = self.prizes_repo.get_all_payouts().copy()
+        payouts["Date"] = payouts["GameDate"].apply(self._safe_date)
 
-        prizes_all["GameDate"] = pd.to_datetime(prizes_all["GameDate"], errors="coerce").dt.date
-        prizes_all["Player"] = prizes_all["Player"].astype(str).str.strip()
+        df_prizes = pd.DataFrame({
+            "Date": payouts["Date"],
+            "Player": payouts["Player"],
+            "PaidIn": 0.0,
+            "PaidOut": payouts["Amount"],
+            "Description": payouts["Category"] + " " + payouts["Place"]
+        })
 
-        # Only included games
-        prizes_included = prizes_all[~prizes_all["GameDate"].isin(excluded_dates)]
+        # ---------------------------------------------------------------
+        # STARTING KITTY
+        # ---------------------------------------------------------------
+        starting_kitty = self.finance_repo.get_starting_kitty()
+        df_start = pd.DataFrame([{
+            "Date": None,
+            "Player": "",
+            "PaidIn": starting_kitty,
+            "PaidOut": 0.0,
+            "Description": "Starting Kitty"
+        }])
 
-        prizes_players = prizes_included[prizes_included["Player"] != "KITTY"]
+        # ---------------------------------------------------------------
+        # MANUAL TRANSACTIONS (excluding prize duplicates)
+        # ---------------------------------------------------------------
+        df_manual = self.finance_repo.get_ledger().copy()
+        df_manual["Date"] = df_manual["Date"].apply(self._safe_date)
 
-        # Sum prizes to players per game
-        if not prizes_players.empty:
-            per_game_prizes = (
-                prizes_players.groupby("GameDate")["Amount"]
-                .sum()
-                .reset_index()
-                .rename(columns={"Amount": "PrizeToPlayers"})
-            )
-        else:
-            per_game_prizes = pd.DataFrame(columns=["GameDate", "PrizeToPlayers"])
-
-        # --------------------------------------------------------------
-        # MERGE GAME FEES + PRIZES
-        # --------------------------------------------------------------
-        game_summary = per_game_players.merge(per_game_prizes, on="GameDate", how="left")
-        game_summary["PrizeToPlayers"] = game_summary["PrizeToPlayers"].fillna(0.0)
-        game_summary["Surplus"] = game_summary["GameFees"] - game_summary["PrizeToPlayers"]
-
-        total_surplus = game_summary["Surplus"].sum() if not game_summary.empty else 0.0
-        kitty_total = starting_kitty + total_surplus
-
-        # --------------------------------------------------------------
-        # MANUAL PLAYER TRANSACTIONS  (the missing piece)
-        # --------------------------------------------------------------
-        manual = self.finance_repo.get_player_transactions().copy()
-
-        if manual.empty:
-            manual = pd.DataFrame(columns=["Date", "Player", "PaidIn", "PaidOut", "Description"])
-
-        manual["Date"] = pd.to_datetime(manual["Date"], errors="coerce").dt.date
-        manual["Player"] = manual["Player"].astype(str).str.strip()
-        manual["PaidIn"] = pd.to_numeric(manual["PaidIn"], errors="coerce").fillna(0.0)
-        manual["PaidOut"] = pd.to_numeric(manual["PaidOut"], errors="coerce").fillna(0.0)
-
-        # --------------------------------------------------------------
-        # BUILD LEDGER ROWS
-        # --------------------------------------------------------------
-        included_game_dates = set(game_summary["GameDate"].tolist())
-
-        # Game fees per player (negative)
-        game_rows = [
-            {
-                "Date": r["Game_Date"],
-                "Player": r["Player_Name"],
-                "Game Fee": -self.GAME_FEE,
-                "Prizes": 0.0,
-                "Other": 0.0,
-                "Description": ""
-            }
-            for _, r in scores_all.iterrows()
-            if r["Game_Date"] in included_game_dates
+        df_manual = df_manual[
+            ~df_manual["Description"].str.contains("prize", case=False, na=False)
         ]
 
-        # Prize payouts
-        prize_rows = [
-            {
-                "Date": r["GameDate"],
-                "Player": r["Player"],
-                "Game Fee": 0.0,
-                "Prizes": float(r["Amount"]),
-                "Other": 0.0,
-                "Description": f"{r['Category']} {r['Place']}".strip()
-            }
-            for _, r in prizes_players.iterrows()
-            if r["GameDate"] in included_game_dates
-        ]
+        # ---------------------------------------------------------------
+        # CONCAT ALL PARTS
+        # ---------------------------------------------------------------
+        parts = [df_start, df_manual, df_fees, df_prizes]
+        parts = [p for p in parts if not p.empty]
 
-        # Manual transactions (ALWAYS INCLUDED)
-        manual_rows = [
-            {
-                "Date": r["Date"],
-                "Player": r["Player"],
-                "Game Fee": 0.0,
-                "Prizes": 0.0,
-                "Other": float(r["PaidIn"]) - float(r["PaidOut"]),
-                "Description": r.get("Description", "")
-            }
-            for _, r in manual.iterrows()
-        ]
+        df_all = pd.concat(parts, ignore_index=True)
 
-        # --------------------------------------------------------------
-        # COMBINE
-        # --------------------------------------------------------------
+        # ---------------------------------------------------------------
+        # FINAL FIX — NORMALISE ALL DATES & SAFE SORT
+        # ---------------------------------------------------------------
+        df_all = self._normalise_final_dates(df_all)
+        df_all = self._sort_ledger(df_all)
 
-        ledger = pd.DataFrame(
-            game_rows + prize_rows + manual_rows,
-            columns=["Date", "Player", "Game Fee", "Prizes", "Other", "Description"]
+        # ---------------------------------------------------------------
+        # BALANCES
+        # ---------------------------------------------------------------
+        balances = (
+            df_all.groupby("Player")[["PaidIn", "PaidOut"]]
+            .sum()
+            .reset_index()
         )
+        balances["Balance"] = balances["PaidIn"] - balances["PaidOut"]
 
-        if ledger.empty:
-            return FinanceResult(
-                ledger=ledger,
-                balances=pd.DataFrame(columns=["Player", "Balance"]),
-                kitty_total=kitty_total,
-                game_summary=game_summary,
-            )
+        # ---------------------------------------------------------------
+        # KITTY TOTAL
+        # ---------------------------------------------------------------
+        kitty_total = float(df_all["PaidIn"].sum() - df_all["PaidOut"].sum())
 
-        # Clean types
-        ledger["Date"] = pd.to_datetime(ledger["Date"], errors="coerce").dt.date
-        ledger["Game Fee"] = pd.to_numeric(ledger["Game Fee"], errors="coerce").fillna(0.0)
-        ledger["Prizes"] = pd.to_numeric(ledger["Prizes"], errors="coerce").fillna(0.0)
-        ledger["Other"] = pd.to_numeric(ledger["Other"], errors="coerce").fillna(0.0)
+        # ---------------------------------------------------------------
+        # GAME SUMMARY
+        # ---------------------------------------------------------------
+        prizes_by_date = df_prizes.groupby("Date")["PaidOut"].sum().to_dict()
 
-        ledger = ledger.dropna(subset=["Player"]).copy()
+        summary_rows = []
+        for game_date, players in players_per_date.items():
+            if isinstance(game_date, datetime.date):
+                fees = players * self.GAME_FEE
+                prize_spend = prizes_by_date.get(game_date, 0.0)
+                surplus = fees - prize_spend
 
-        ledger["Net"] = ledger["Game Fee"] + ledger["Prizes"] + ledger["Other"]
+                summary_rows.append({
+                    "GameDate": game_date,
+                    "Players": players,
+                    "GameFees": fees,
+                    "PrizeToPlayers": prize_spend,
+                    "Surplus": surplus,
+                })
 
-        # --------------------------------------------------------------
-        # PLAYER BALANCES
-        # --------------------------------------------------------------
-        players_df = self.players_repo.get_all()
-        starting_balances = dict(zip(players_df["Player"], players_df["StartingBalance"]))
+        df_summary = pd.DataFrame(summary_rows)
 
-        ledger = ledger.sort_values(["Player", "Date"]).reset_index(drop=True)
-        ledger["Balance"] = 0.0
-
-        for player in ledger["Player"].unique():
-            start = starting_balances.get(player, 0.0)
-            mask = ledger["Player"] == player
-            ledger.loc[mask, "Balance"] = start + ledger.loc[mask, "Net"].cumsum()
-
-        # Sort for display
-        ledger = ledger.sort_values(["Date", "Player"]).reset_index(drop=True)
-
-        # Final balances per player
-        balances = ledger.groupby("Player")["Balance"].last().reset_index()
-
-        # ------------------------------------------------------------
-        # WRITE LEDGER TO DATABASE
-        # ------------------------------------------------------------
-        try:
-            # Overwrite table with new ledger
-            self.db.write_table("FinanceLedger", ledger, replace=True)
-        except Exception as e:
-            print("ERROR WRITING FINANCELEDGER:", e)
-            raise
-
-        # Return standard result
-        return FinanceResult(
-            ledger=ledger,
-            balances=balances,
-            game_summary=game_summary,
-            kitty_total=kitty_total,
-        )
-
+        return FinanceResult(df_all, balances, kitty_total, df_summary)

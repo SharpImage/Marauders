@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QComboBox, QMessageBox
+    QLabel, QPushButton, QComboBox, QMessageBox, QSizePolicy
 )
 from datetime import date
+import pandas as pd  # needed because _load_dates uses pd.to_datetime
 
 
 class ReportsTab(QWidget):
@@ -13,25 +14,44 @@ class ReportsTab(QWidget):
         layout = QVBoxLayout()
 
         # ---------------------------------------------------
-        # Report type selector
+        # Report type selector (Label + Combo Box together)
         # ---------------------------------------------------
+        type_layout = QHBoxLayout()
+        lbl_type = QLabel("Choose Report Type:")
         self.cmb_type = QComboBox()
+
+        # Limit dropdown width so arrow stays close
+        self.cmb_type.setMaximumWidth(220)
+        self.cmb_type.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
         self.cmb_type.addItems([
             "Game Report",
             "Current Handicaps",
             "Balances Report"
         ])
         self.cmb_type.currentIndexChanged.connect(self._toggle_date_selector)
-        layout.addWidget(QLabel("Choose Report Type:"))
-        layout.addWidget(self.cmb_type)
+
+        type_layout.addWidget(lbl_type)
+        type_layout.addWidget(self.cmb_type)
+        type_layout.addStretch()
+        layout.addLayout(type_layout)
 
         # ---------------------------------------------------
-        # Game date selector (only used for game report)
+        # Game date selector (Label + Combo Box together)
         # ---------------------------------------------------
+        date_layout = QHBoxLayout()
+        lbl_date = QLabel("Choose Game Date:")
         self.cmb_date = QComboBox()
-        layout.addWidget(QLabel("Choose Game Date:"))
-        layout.addWidget(self.cmb_date)
 
+        self.cmb_date.setMaximumWidth(220)
+        self.cmb_date.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        date_layout.addWidget(lbl_date)
+        date_layout.addWidget(self.cmb_date)
+        date_layout.addStretch()
+        layout.addLayout(date_layout)
+
+        # Load available game dates
         self._load_dates()
         self._toggle_date_selector()
 
@@ -41,30 +61,23 @@ class ReportsTab(QWidget):
         btn_layout = QHBoxLayout()
 
         btn_generate = QPushButton("Generate Report")
-        btn_generate.clicked.connect(self.generate_report)
         btn_layout.addWidget(btn_generate)
-
-        # Email button (future)
-        # btn_email = QPushButton("Email Report")
-        # btn_email.clicked.connect(self.email_report)
-        # btn_layout.addWidget(btn_email)
+        btn_layout.addStretch()
+        btn_generate.clicked.connect(self.generate_report)
 
         layout.addLayout(btn_layout)
-
         self.setLayout(layout)
 
     # ---------------------------------------------------
     def _load_dates(self):
         dates = self.manager.scores_repo.get_game_dates()
 
-        # Convert to proper date objects → sort newest first
         try:
             dates_sorted = sorted(
                 [pd.to_datetime(d).date() for d in dates],
                 reverse=True
             )
         except Exception:
-            # Fallback if date parsing fails
             dates_sorted = sorted(dates, reverse=True)
 
         self.cmb_date.clear()
@@ -73,7 +86,6 @@ class ReportsTab(QWidget):
 
     # ---------------------------------------------------
     def _toggle_date_selector(self):
-        """Enable date dropdown only for Game Report."""
         selected = self.cmb_type.currentText()
         self.cmb_date.setEnabled(selected == "Game Report")
 

@@ -119,17 +119,54 @@ class FinanceRepository:
 
         return latest
 
-    def get_player_transactions(self):
+    def get_player_transactions(self) -> pd.DataFrame:
         """
         Return the PlayerTransactions table as a DataFrame.
-        Fields expected: Date, Player, PaidIn, PaidOut, Description.
+
+        Includes a synthetic TransactionID column (SQLite rowid)
+        for editing purposes.
+
+        Columns:
+            TransactionID, Date, Player, PaidIn, PaidOut, Description
         """
         try:
-            df = self.db.get_table("PlayerTransactions").copy()
+            df = self.db.read_sql(
+                """
+                SELECT rowid AS TransactionID, Date, Player, PaidIn, PaidOut, Description
+                FROM PlayerTransactions
+                ORDER BY Date
+                """
+            )
             return df
         except Exception:
-            return pd.DataFrame(columns=["Date", "Player", "PaidIn", "PaidOut", "Description"])
+            return pd.DataFrame(
+                columns=["TransactionID", "Date", "Player", "PaidIn", "PaidOut", "Description"]
+            )
 
+    def update_transaction(
+            self,
+            transaction_id: int,
+            date: str,
+            player: str,
+            paid_in: float,
+            paid_out: float,
+            description: str,
+    ) -> None:
+        """
+        Update an existing transaction identified by TransactionID (rowid).
+        """
+        self.db.execute(
+            """
+            UPDATE PlayerTransactions
+            SET Date        = ?,
+                Player      = ?,
+                PaidIn      = ?,
+                PaidOut     = ?,
+                Description = ?
+            WHERE rowid = ?
+            """,
+            (date, player, paid_in, paid_out, description, transaction_id),
+        )
 
 
 

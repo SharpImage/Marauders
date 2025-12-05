@@ -86,6 +86,11 @@ class PlayerService:
         df["Balance"] = pd.to_numeric(df["Balance"], errors="coerce").fillna(0.0)
         df["Balance"] = df["Balance"].round(2)
 
+        # --- Fix floating-point precision on starting handicap ---
+        for col in ["StartingHandicap", "Start_Handicap", "Starting_Handicap"]:
+            if col in df.columns:
+                df[col] = df[col].astype(float).round(1)
+
         # 7. Final ordering
         df = df.sort_values("Player").reset_index(drop=True)
         return df

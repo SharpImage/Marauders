@@ -329,7 +329,7 @@ class GameReportService:
         def format_money(df: pd.DataFrame) -> pd.DataFrame:
             """Return a copy of df with £ added to money columns."""
             df2 = df.copy()
-            money_cols = ["Prizes", "Balance"]
+            money_cols = ["Prizes", "Balance","Amount"]
 
             for col in money_cols:
                 if col in df2.columns:

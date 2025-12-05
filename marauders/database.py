@@ -37,9 +37,14 @@ class Database:
     # Query helpers (read operations)
     # ----------------------------------------------------------
     def read_sql(self, sql: str, params: Iterable[Any] = ()) -> pd.DataFrame:
-        """Execute a SELECT statement and return a Pandas DataFrame."""
+        """Execute a SELECT statement and return a Pandas DataFrame WITHOUT auto date parsing."""
         with self.connect() as conn:
-            df = pd.read_sql_query(sql, conn, params=params)
+            df = pd.read_sql_query(
+                sql,
+                conn,
+                params=params,
+                parse_dates=False  # ← CRITICAL FIX
+            )
         df.columns = [c.strip() for c in df.columns]
         return df
 

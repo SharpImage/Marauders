@@ -81,13 +81,15 @@ class PrizeRepository:
         self.db.write_table("PrizePayouts", payouts_df, replace=False)
 
     def get_all_payouts(self) -> pd.DataFrame:
-        """Returns PrizePayouts table."""
+        """Returns PrizePayouts table with GameDate as raw string (not Timestamp)."""
         df = self.db.get_table("PrizePayouts")
         if df.empty:
             return df
 
+        # Prevent Pandas auto-parsing by leaving GameDate as string
+        df["GameDate"] = df["GameDate"].astype(str).str.strip()
         df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0.0)
-        df["GameDate"] = pd.to_datetime(df["GameDate"], errors="coerce")
+
         df["Player"] = df["Player"].astype(str).str.strip()
         df["Category"] = df["Category"].astype(str).str.strip()
         df["Place"] = df["Place"].astype(str).str.strip()

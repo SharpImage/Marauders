@@ -5,11 +5,12 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox, QPushButton, QFormLayout, QMessageBox, QDateEdit
 )
 from PySide6.QtCore import QDate
+import pandas as pd
 
 
 class AddTransactionDialog(QDialog):
     """
-    Dialog to add a transaction to PlayerTransactions table.
+    Dialog to create a new entry in PlayerTransactions.
     """
 
     def __init__(self, manager, parent=None):
@@ -22,15 +23,17 @@ class AddTransactionDialog(QDialog):
         layout = QVBoxLayout()
         form = QFormLayout()
 
-        # Date
+        # Date field
         self.date_edit = QDateEdit()
-        self.date_edit.setDate(QDate.currentDate())
         self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDisplayFormat("yyyy-MM-dd")
+        self.date_edit.setDate(QDate.currentDate())
         form.addRow("Date", self.date_edit)
 
         # Player dropdown
         self.cmb_player = QComboBox()
-        players = self.manager.player_service.players_repo.get_all()["Player"].tolist()
+        players_df = self.manager.player_service.players_repo.get_all()
+        players = players_df["Player"].astype(str).tolist()
         self.cmb_player.addItems(players)
         form.addRow("Player", self.cmb_player)
 
@@ -74,7 +77,7 @@ class AddTransactionDialog(QDialog):
         paid_out = float(self.spn_paid_out.value())
         desc = self.txt_description.text().strip()
 
-        # Validate that only one of PaidIn or PaidOut is used
+        # Basic validation
         if paid_in > 0 and paid_out > 0:
             QMessageBox.warning(
                 self,
@@ -92,6 +95,7 @@ class AddTransactionDialog(QDialog):
             return
 
         try:
+            # Insert into DB
             self.manager.finance_service.finance_repo.add_transaction(
                 date=date_str,
                 player=player,
@@ -99,6 +103,9 @@ class AddTransactionDialog(QDialog):
                 paid_out=paid_out,
                 description=desc,
             )
+
+            # Rebuild finance ledger immediately
+            self.manager.finance_service.rebuild_finance()
 
             QMessageBox.information(self, "Success", "Transaction added.")
             self.accept()
