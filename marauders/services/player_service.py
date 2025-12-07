@@ -32,43 +32,43 @@ class PlayerService:
         """
         Builds the player status table combining:
           - Player details
-          - Current handicap (active only)
-          - Current balance (all players, then merged)
-
-        If include_inactive=True:
-            All players appear (active + inactive)
-        Otherwise:
-            Only active players are included.
+          - Current handicap
+          - Current balance
         """
 
-        # 1. ACTIVE players only unless include_inactive flag is set
+        # 1. Get players (active only or all)
         if include_inactive:
             df_players = self.players_repo.get_all().copy()
         else:
             df_players = self.players_repo.get_active_players().copy()
 
-        # 2. Current handicaps (already filtered to active players)
+        # --- SAFETY: ensure no stale handicap column from SQL ----
+        if "CurrentHandicap" in df_players.columns:
+            df_players = df_players.drop(columns=["CurrentHandicap"])
+        # ----------------------------------------------------------
+
+        # 2. Current handicaps
         df_hcaps = self.hcaps_repo.get_current().copy()
+
         if (
-            df_hcaps is None
-            or df_hcaps.empty
-            or "Player" not in df_hcaps.columns
-            or "CurrentHandicap" not in df_hcaps.columns
+                df_hcaps is None
+                or df_hcaps.empty
+                or "Player" not in df_hcaps.columns
+                or "CurrentHandicap" not in df_hcaps.columns
         ):
             df_hcaps = pd.DataFrame(columns=["Player", "CurrentHandicap"])
         else:
-            df_hcaps["CurrentHandicap"] = pd.to_numeric(
-                df_hcaps["CurrentHandicap"], errors="coerce"
-            ).fillna(0.0)
+            df_hcaps["CurrentHandicap"] = (
+                pd.to_numeric(df_hcaps["CurrentHandicap"], errors="coerce")
+                .fillna(0.0)
+            )
 
-        # 3. Balances – may include inactive players, that's fine
+        # 3. Balances
         balances = self.finance_repo.get_player_balances().copy()
         if "Balance" not in balances.columns:
             balances["Balance"] = 0.0
 
-        balances["Balance"] = pd.to_numeric(
-            balances["Balance"], errors="coerce"
-        ).fillna(0.0)
+        balances["Balance"] = pd.to_numeric(balances["Balance"], errors="coerce").fillna(0.0)
 
         # 4. Merge players + handicaps
         df = df_players.merge(df_hcaps, on="Player", how="left")
@@ -76,20 +76,15 @@ class PlayerService:
         # 5. Merge balances
         df = df.merge(balances[["Player", "Balance"]], on="Player", how="left")
 
-        # 6. Round numeric columns (safe)
+        # 6. Rounding
         if "CurrentHandicap" in df.columns:
-            df["CurrentHandicap"] = pd.to_numeric(
-                df["CurrentHandicap"], errors="coerce"
-            ).fillna(0.0)
             df["CurrentHandicap"] = df["CurrentHandicap"].round(1)
 
-        df["Balance"] = pd.to_numeric(df["Balance"], errors="coerce").fillna(0.0)
         df["Balance"] = df["Balance"].round(2)
 
-        # --- Fix floating-point precision on starting handicap ---
         for col in ["StartingHandicap", "Start_Handicap", "Starting_Handicap"]:
             if col in df.columns:
-                df[col] = df[col].astype(float).round(1)
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0).round(1)
 
         # 7. Final ordering
         df = df.sort_values("Player").reset_index(drop=True)

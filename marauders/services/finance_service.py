@@ -27,32 +27,44 @@ class FinanceService:
     # SAFE DATE PARSER
     # =====================================================================
     def _safe_date(self, val):
-        """Convert any possible date representation into datetime.date or None."""
+        """
+        Convert any possible date representation into datetime.date or None.
+        For non-ISO strings (e.g. '02/12/2025') we treat them as UK style
+        day-first (2 December 2025), to avoid 02/12↔12/02 flips.
+        """
+        # Already a date
         if isinstance(val, datetime.date):
             return val
 
+        # Pandas Timestamp -> datetime.date
         if isinstance(val, pd.Timestamp):
             return val.date()
 
+        # String handling
         if isinstance(val, str):
             v = val.strip()
+            if not v:
+                return None
 
-            # Fast path for ISO YYYY-MM-DD
+            # Fast path for ISO YYYY-MM-DD (unambiguous)
             if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
                 try:
                     return datetime.date.fromisoformat(v)
                 except Exception:
                     return None
 
-            # Fallback parser
-            parsed = pd.to_datetime(v, errors="coerce")
+            # Fallback parser for other string formats:
+            # assume UK style (dayfirst=True) to match score/prize imports.
+            parsed = pd.to_datetime(v, errors="coerce", dayfirst=True)
             return None if pd.isna(parsed) else parsed.date()
 
-        if val is None or pd.isna(val):
+        # None / NaN
+        if val is None or (isinstance(val, float) and pd.isna(val)):
             return None
 
+        # Anything else – let pandas try, still with dayfirst=True
         try:
-            parsed = pd.to_datetime(val, errors="coerce")
+            parsed = pd.to_datetime(val, errors="coerce", dayfirst=True)
             return None if pd.isna(parsed) else parsed.date()
         except Exception:
             return None
@@ -112,7 +124,10 @@ class FinanceService:
         ]
 
         if excluded_dates:
-            scores["Included"] = ~scores["Game_Date"].isin(excluded_dates)
+            scores["Game_Date"] = scores["Game_Date"].apply(self._safe_date)
+            excluded_dates = [self._safe_date(x) for x in excluded_dates]
+
+            scores["Included"] = ~scores["Game_Date"].apply(lambda d: d in excluded_dates)
         else:
             scores["Included"] = True
 
@@ -136,7 +151,8 @@ class FinanceService:
                     "Player": "",
                     "PaidIn": players * self.GAME_FEE,
                     "PaidOut": 0.0,
-                    "Description": f"Game fees for {game_date}"
+                    "Description": f"Game fees for {game_date}",
+                    "Category": "GAME_FEE",
                 })
 
         df_fees = pd.DataFrame(fee_rows)
@@ -154,7 +170,8 @@ class FinanceService:
             "Player": payouts["Player"],
             "PaidIn": 0.0,
             "PaidOut": payouts["Amount"],
-            "Description": payouts["Category"] + " " + payouts["Place"]
+            "Description": payouts["Category"] + " " + payouts["Place"],
+            "Category": "PRIZE",
         })
 
         # ---------------------------------------------------------------
@@ -166,7 +183,8 @@ class FinanceService:
             "Player": "",
             "PaidIn": starting_kitty,
             "PaidOut": 0.0,
-            "Description": "Starting Kitty"
+            "Description": "Starting Kitty",
+            "Category": "STARTING_KITTY",
         }])
 
         # ---------------------------------------------------------------
@@ -226,6 +244,7 @@ class FinanceService:
                     "GameFees": fees,
                     "PrizeToPlayers": prize_spend,
                     "Surplus": surplus,
+                    "Category": "SURPLUS",
                 })
 
         df_summary = pd.DataFrame(summary_rows)

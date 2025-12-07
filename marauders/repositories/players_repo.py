@@ -15,13 +15,21 @@ class PlayerRepository:
     # READ
     # ----------------------------------------------------------
     def get_all(self) -> pd.DataFrame:
-        df = self.db.read_sql("""
-                              SELECT *
-                              FROM Players
-                              ORDER BY Player
-                              """)
-
-        return df
+        sql = """
+              SELECT Players.Player, \
+                     Players."First Name", \
+                     Players."Last Name", \
+                     Players."Primary Email", \
+                     Players.StartingHandicap, \
+                     Players.Active, \
+                     Players.StartingBalance, \
+                     CurrentHandicaps.CurrentHandicap
+              FROM Players
+                       LEFT JOIN CurrentHandicaps
+                                 ON CurrentHandicaps.Player = Players.Player
+              ORDER BY Players.Player; \
+              """
+        return self.db.read_sql(sql)
 
     def get_active(self) -> pd.DataFrame:
         return self.db.read_sql("""

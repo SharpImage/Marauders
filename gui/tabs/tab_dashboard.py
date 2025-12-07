@@ -80,23 +80,16 @@ class DashboardTab(QWidget):
         # -----------------------------------------
         finance = self.manager.finance_service.rebuild_finance()
 
-        kitty = getattr(finance, "kitty_total", 0.0)
+        kitty = finance.kitty_total
 
-        # INITIAL VALUES
-        total_prizes = 0.0
-        total_game_fees = 0.0
+        # --- Total prizes awarded ---
+        mask_prizes = (finance.ledger["Category"] == "PRIZE")
+        total_prizes = finance.ledger.loc[mask_prizes, "PaidOut"].sum()
 
-        # Extract from ledger if available
-        if hasattr(finance, "ledger") and finance.ledger is not None:
-            df_ledger = finance.ledger
-
-            if not df_ledger.empty:
-                if "Prizes" in df_ledger.columns:
-                    total_prizes = df_ledger["Prizes"].fillna(0).sum()
-
-                if "GameFee" in df_ledger.columns:
-                    total_game_fees = df_ledger["GameFee"].fillna(0).sum()
+        # --- Total game fees collected ---
+        mask_fees = (finance.ledger["Category"] == "GAME_FEE")
+        total_fees = finance.ledger.loc[mask_fees, "PaidIn"].sum()
 
         self.lbl_total_prizes.setText(f"Total prizes awarded: £{total_prizes:.2f}")
-        self.lbl_total_game_fees.setText(f"Total game fees collected: £{total_game_fees:.2f}")
+        self.lbl_total_game_fees.setText(f"Total game fees collected: £{total_fees:.2f}")
         self.lbl_kitty.setText(f"Kitty balance: £{kitty:.2f}")
