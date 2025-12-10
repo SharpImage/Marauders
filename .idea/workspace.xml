@@ -4,17 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a1bf1384-261b-4d7a-8c1c-04158c818443" name="Changes" comment="fixed a number of problems with formatting - after a number of iterations got the system working ok">
+    <list default="true" id="a1bf1384-261b-4d7a-8c1c-04158c818443" name="Changes" comment="A number of changes - to correct problems.  The program seems to be working ok now">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gui/tabs/tab_dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/tabs/tab_dashboard.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gui/tabs/tab_finance.py" beforeDir="false" afterPath="$PROJECT_DIR$/gui/tabs/tab_finance.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/marauders.db" beforeDir="false" afterPath="$PROJECT_DIR$/marauders.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/marauders/manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/marauders/repositories/players_repo.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/repositories/players_repo.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/marauders/services/finance_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/services/finance_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/marauders/services/import_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/services/import_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/marauders/services/player_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/marauders/services/player_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -165,7 +158,8 @@
       <workItem from="1764720087237" duration="9219000" />
       <workItem from="1764766263784" duration="12870000" />
       <workItem from="1764930306560" duration="30978000" />
-      <workItem from="1765109347082" duration="20128000" />
+      <workItem from="1765109347082" duration="20335000" />
+      <workItem from="1765380674177" duration="5046000" />
     </task>
     <task id="LOCAL-00001" summary="This is the first commit after checking system works">
       <option name="closed" value="true" />
@@ -199,7 +193,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764787038208</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="A number of changes - to correct problems.  The program seems to be working ok now">
+      <option name="closed" value="true" />
+      <created>1765142356440</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765142356440</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -221,7 +223,8 @@
     <MESSAGE value="updated to add different functionality. Correcte handicap error that was using the excluded games. Dashboard is now different also added the ability to show non active player using a check box on the dashboard" />
     <MESSAGE value="updated to add link to python anywhere file. fixed problems with different column names and other general fixes." />
     <MESSAGE value="fixed a number of problems with formatting - after a number of iterations got the system working ok" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed a number of problems with formatting - after a number of iterations got the system working ok" />
+    <MESSAGE value="A number of changes - to correct problems.  The program seems to be working ok now" />
+    <option name="LAST_COMMIT_MESSAGE" value="A number of changes - to correct problems.  The program seems to be working ok now" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -249,7 +252,7 @@
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$find_dashboard.coverage" NAME="find_dashboard Coverage Results" MODIFIED="1764602500258" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$handicap_service.coverage" NAME="handicap_service Coverage Results" MODIFIED="1764611519190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/services" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$debug_game_finance.coverage" NAME="debug_game_finance Coverage Results" MODIFIED="1764515515792" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$run_gui.coverage" NAME="run_gui Coverage Results" MODIFIED="1765141437321" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MaraudersGolfSystem$run_gui.coverage" NAME="run_gui Coverage Results" MODIFIED="1765384366410" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$import_service.coverage" NAME="import_service Coverage Results" MODIFIED="1764960306933" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/services" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$tab_dashboard.coverage" NAME="tab_dashboard Coverage Results" MODIFIED="1764603847430" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/gui/tabs" />
     <SUITE FILE_PATH="coverage/MaraudersGolfSystem$finance_service.coverage" NAME="finance_service Coverage Results" MODIFIED="1764725029688" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/marauders/services" />

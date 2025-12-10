@@ -143,17 +143,41 @@ class FinanceService:
         # ---------------------------------------------------------------
         # GAME FEES
         # ---------------------------------------------------------------
+        # Build per-player game-fee rows (no aggregated date rows)
         fee_rows = []
-        for game_date, players in players_per_date.items():
-            if isinstance(game_date, datetime.date):
-                fee_rows.append({
-                    "Date": game_date,
-                    "Player": "",
-                    "PaidIn": players * self.GAME_FEE,
-                    "PaidOut": 0.0,
-                    "Description": f"Game fees for {game_date}",
-                    "Category": "GAME_FEE",
-                })
+
+        # Work only with included scores
+        scores_included_local = scores_inc.copy()
+
+        # Ensure valid date format
+        scores_included_local = scores_included_local[
+            scores_included_local["Game_Date"].notna()
+        ]
+
+        # One fee row per (game_date, player)
+        for _, row in (
+                scores_included_local[["Game_Date", "Player_Name"]]
+                        .drop_duplicates()
+                        .iterrows()
+        ):
+            game_date = row["Game_Date"]
+            player = row["Player_Name"]
+
+            # Normalise Timestamp → date
+            if hasattr(game_date, "date"):
+                game_date = game_date.date()
+
+            fee_rows.append({
+                "Date": game_date,
+                "Player": player,
+                "PaidIn": self.GAME_FEE,  # £2 per player per game
+                "PaidOut": 0.0,
+                "Description": f"Game fee ({game_date})",
+                "Category": "GAME_FEE",
+            })
+
+        df_fees = pd.DataFrame(fee_rows)
+        df_fees["Date"] = df_fees["Date"].apply(self._safe_date).astype(object)
 
         df_fees = pd.DataFrame(fee_rows)
         if not df_fees.empty:
