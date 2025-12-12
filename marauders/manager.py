@@ -117,6 +117,15 @@ class MaraudersManager:
                 raise RuntimeError("No master score file set.")
         return self.import_service.import_new_scores()
 
+    def import_all_data(self):
+        """Run full import of all data (Scores, Players, Finance, Config)."""
+        if not self.import_service:
+             if self.master_file:
+                self.import_service = ImportService(self.db, str(self.master_file))
+             else:
+                raise RuntimeError("No master score file set.")
+        return self.import_service.import_all()
+
     # ---------------------------------------------------------------
     # PRIZE WRAPPERS
     # ---------------------------------------------------------------
