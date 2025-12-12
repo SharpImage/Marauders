@@ -220,10 +220,11 @@ class MaraudersManager:
     def run_full_update(self):
         results = {}
 
-        # Import scores
+        # Import scores (and other data if present)
         if self.import_service:
             try:
-                results["import"] = self.import_service.import_new_scores()
+                # Use import_all_data to grab Players, Transactions, etc. if available
+                results["import"] = self.import_all_data()
             except Exception as e:
                 results["import_error"] = str(e)
         else:
