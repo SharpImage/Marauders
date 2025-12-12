@@ -2,31 +2,31 @@
 
 import pandas as pd
 from marauders.database import Database
+from marauders.repositories.settings_repo import SettingsRepository
 
 
 class FinanceRepository:
     """
     Repository for finance-related DB tables:
       - PlayerTransactions
-      - FinanceSettings (stores StartingKitty)
     """
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, settings_repo: SettingsRepository):
         self.db = db
-        self._ensure_tables()
+        self.settings_repo = settings_repo
+        self._ensure_table()
 
-    # ------------------------------------------------------------
-    # Ensure Settings Table Exists
-    # ------------------------------------------------------------
-    def _ensure_tables(self):
-        self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS FinanceSettings (
-                Setting TEXT PRIMARY KEY,
-                Value REAL
+    def _ensure_table(self):
+        """Ensure the PlayerTransactions table exists."""
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS PlayerTransactions (
+                Date TEXT,
+                Player TEXT,
+                PaidIn REAL,
+                PaidOut REAL,
+                Description TEXT
             )
-            """
-        )
+        """)
 
     # ------------------------------------------------------------
     # Player Transactions
@@ -54,24 +54,10 @@ class FinanceRepository:
     # Starting Kitty
     # ------------------------------------------------------------
     def get_starting_kitty(self) -> float:
-        df = self.db.read_sql("""
-            SELECT Value FROM FinanceSettings
-            WHERE Setting='StartingKitty'
-        """)
-        if df.empty:
-            return 0.0
-        return float(df.iloc[0]["Value"])
+        return self.settings_repo.get_starting_kitty()
 
     def set_starting_kitty(self, amount: float):
-        self.db.execute(
-            """
-            INSERT INTO FinanceSettings (Setting, Value)
-            VALUES ('StartingKitty', ?)
-            ON CONFLICT(Setting)
-            DO UPDATE SET Value = excluded.Value
-            """,
-            (amount,)
-        )
+        self.settings_repo.set_starting_kitty(amount)
 
     # ------------------------------------------------------------
     # Account Balances
@@ -167,6 +153,3 @@ class FinanceRepository:
             """,
             (date, player, paid_in, paid_out, description, transaction_id),
         )
-
-
-

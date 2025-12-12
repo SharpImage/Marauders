@@ -9,6 +9,7 @@ from marauders.database import Database
 from marauders.repositories.players_repo import PlayerRepository
 from marauders.repositories.handicaps_repo import HandicapRepository
 from marauders.repositories.finance_repo import FinanceRepository
+from marauders.repositories.settings_repo import SettingsRepository
 
 
 class PlayerService:
@@ -19,11 +20,11 @@ class PlayerService:
     Also provides add/edit/deactivate operations via PlayerRepository.
     """
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, settings_repo: SettingsRepository):
         self.db = db
         self.players_repo = PlayerRepository(db)
         self.hcaps_repo = HandicapRepository(db)
-        self.finance_repo = FinanceRepository(db)
+        self.finance_repo = FinanceRepository(db, settings_repo)
 
     # ----------------------------------------------------------------------
     # STATUS TABLE (Dashboard)

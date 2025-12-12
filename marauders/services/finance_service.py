@@ -177,11 +177,10 @@ class FinanceService:
             })
 
         df_fees = pd.DataFrame(fee_rows)
-        df_fees["Date"] = df_fees["Date"].apply(self._safe_date).astype(object)
+        if df_fees.empty:
+             df_fees = pd.DataFrame(columns=["Date", "Player", "PaidIn", "PaidOut", "Description", "Category"])
 
-        df_fees = pd.DataFrame(fee_rows)
-        if not df_fees.empty:
-            df_fees["Date"] = df_fees["Date"].apply(self._safe_date)
+        df_fees["Date"] = df_fees["Date"].apply(self._safe_date).astype(object)
 
         # ---------------------------------------------------------------
         # PRIZES

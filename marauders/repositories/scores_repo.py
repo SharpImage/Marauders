@@ -10,6 +10,29 @@ class ScoreRepository:
 
     def __init__(self, db: Database):
         self.db = db
+        self._ensure_table()
+
+    def _ensure_table(self):
+        """Ensure the Scores table exists."""
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS Scores (
+                Game_Date TEXT,
+                Player_Name TEXT,
+                Front_Nine INTEGER,
+                Back_Nine INTEGER,
+                Overall INTEGER,
+                NTP_Hole3 REAL,
+                NTP_Hole6 REAL,
+                NTP_in2_Hole7 REAL,
+                NTP_in2_Hole10 REAL,
+                NTP_Hole11 REAL,
+                NTP_Hole15 REAL
+            )
+        """)
+        self.db.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_scores_unique
+            ON Scores (Game_Date, Player_Name);
+        """)
 
     # ----------------------------------------------------------
     # Internal date parser to guarantee Python datetime.date
