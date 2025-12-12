@@ -8,11 +8,14 @@ class SettingsRepository:
     """
     Unified repository for storing application settings.
     Replaces separate settings tables in Database, Manager, and FinanceRepo.
+
+    Includes migration logic to preserve data from old 'AppSettings' and 'FinanceSettings' tables.
     """
 
     def __init__(self, db: Database):
         self.db = db
         self._ensure_table()
+        self._migrate_old_settings()
 
     def _ensure_table(self):
         """Create GlobalSettings table if it does not exist."""
@@ -23,7 +26,44 @@ class SettingsRepository:
             )
         """)
 
-        # Ensure default values exist
+    def _migrate_old_settings(self):
+        """
+        Migrate settings from legacy tables (AppSettings, FinanceSettings)
+        if they exist and haven't been migrated yet.
+        """
+        # 1. Migrate MasterFile from AppSettings
+        if self.db.table_exists("AppSettings"):
+            try:
+                # AppSettings schema: Setting, Value
+                df = self.db.read_sql("SELECT Value FROM AppSettings WHERE Setting = 'MasterFile'")
+                if not df.empty:
+                    val = df.iloc[0]["Value"]
+                    if val:
+                        # Only overwrite if we don't already have a value (or force overwrite?)
+                        # Let's overwrite safely (only if current is empty or default)
+                        current = self.get_setting("MasterFile")
+                        if not current:
+                            self.set_setting("MasterFile", val)
+                            print(f"DEBUG: Migrated MasterFile '{val}' from AppSettings.")
+            except Exception as e:
+                print(f"DEBUG: Failed to migrate AppSettings: {e}")
+
+        # 2. Migrate StartingKitty from FinanceSettings
+        if self.db.table_exists("FinanceSettings"):
+            try:
+                # FinanceSettings schema: Setting, Value
+                df = self.db.read_sql("SELECT Value FROM FinanceSettings WHERE Setting = 'StartingKitty'")
+                if not df.empty:
+                    val = df.iloc[0]["Value"]
+                    # Check current
+                    current = self.get_setting("StartingKitty")
+                    if not current or current == "0.0" or current == "0":
+                         self.set_setting("StartingKitty", str(val))
+                         print(f"DEBUG: Migrated StartingKitty '{val}' from FinanceSettings.")
+            except Exception as e:
+                print(f"DEBUG: Failed to migrate FinanceSettings: {e}")
+
+        # Ensure default values exist if still missing
         defaults = {
             "MasterFile": "",
             "StartingKitty": "0.0"
