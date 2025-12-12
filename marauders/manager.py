@@ -101,6 +101,10 @@ class MaraudersManager:
     def get_game_dates(self):
         return self.scores_repo.get_game_dates()
 
+    def get_player_status(self, include_inactive=False):
+        """Return the main player status table for the Dashboard."""
+        return self.player_service.build_player_status_table(include_inactive)
+
     # ---------------------------------------------------------------
     # IMPORT SCORES
     # ---------------------------------------------------------------

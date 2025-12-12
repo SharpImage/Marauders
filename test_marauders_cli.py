@@ -92,9 +92,8 @@ def main():
     # ------------------------------------------------------
     print_header("PLAYER STATUS TABLE")
     try:
-        # manager.get_player_status() is missing from manager, but functionality exists in services
-        # We'll skip for now unless we add it to manager
-        pass
+        status_df = manager.get_player_status(include_inactive=True)
+        print(status_df.head())
     except Exception as e:
          print(f"Player status failed: {e}")
 

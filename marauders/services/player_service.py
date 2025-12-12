@@ -79,6 +79,7 @@ class PlayerService:
 
         # 6. Rounding
         if "CurrentHandicap" in df.columns:
+            df["CurrentHandicap"] = pd.to_numeric(df["CurrentHandicap"], errors="coerce")
             df["CurrentHandicap"] = df["CurrentHandicap"].round(1)
 
         df["Balance"] = df["Balance"].round(2)
