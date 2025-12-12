@@ -40,7 +40,13 @@ class ImportService:
         import pandas as pd
 
         try:
-            df = pd.read_excel(self.master_file)
+            # First try loading "Scores" sheet
+            try:
+                df = pd.read_excel(self.master_file, sheet_name="Scores")
+            except ValueError:
+                # Fallback to first sheet
+                df = pd.read_excel(self.master_file)
+
             return df
         except Exception as e:
             raise RuntimeError(f"Failed to load Excel file '{self.master_file}': {e}")
