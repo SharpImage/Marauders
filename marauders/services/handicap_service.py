@@ -359,6 +359,17 @@ class HandicapService:
                 current_hcap[player] = new_hcap
 
         history = pd.DataFrame(history_rows)
+
+        if history.empty:
+            # Return empty structure with expected columns
+            return pd.DataFrame(columns=[
+                "Player", "GameDate", "PreviousHandicap", "NewHandicap",
+                "TotalAdjustment", "RankBasedAdjustment",
+                "RankBasedAdjustment_F9", "RankBasedAdjustment_B9",
+                "RankBasedAdjustment_Overall", "PointsBasedAdjustment",
+                "F9Rank", "B9Rank", "OverallRank", "StablefordPoints"
+            ])
+
         history = history.sort_values(["GameDate", "Player", "OverallRank"]).reset_index(drop=True)
 
         return history

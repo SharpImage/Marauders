@@ -2,6 +2,7 @@
 
 import os
 from datetime import date
+from typing import Optional, Any
 
 from marauders.database import Database
 
@@ -13,6 +14,7 @@ from marauders.repositories.scores_repo import ScoreRepository
 from marauders.repositories.prizes_repo import PrizeRepository
 from marauders.repositories.games_repo import GameRepository
 from marauders.repositories.finance_repo import FinanceRepository
+from marauders.repositories.settings_repo import SettingsRepository
 
 # -------------------------------------------------------
 # Service Imports
@@ -37,17 +39,17 @@ class MaraudersManager:
         # Database connection
         # -------------------------------------------------------
         self.db = Database(db_path)
-        self.db.execute("""
-                        CREATE UNIQUE INDEX IF NOT EXISTS idx_scores_unique
-                            ON Scores (Game_Date, Player_Name);
-                        """)
-        self._ensure_settings_table()
+
+        # -------------------------------------------------------
+        # Settings Repository
+        # -------------------------------------------------------
+        self.settings_repo = SettingsRepository(self.db)
 
         # -------------------------------------------------------
         # Load settings from DB
         # -------------------------------------------------------
-        self.master_file = self.get_setting("MasterFile", default="")
-        self.starting_kitty = float(self.get_setting("StartingKitty", default="0"))
+        self.master_file = self.settings_repo.get_master_file()
+        self.starting_kitty = self.settings_repo.get_starting_kitty()
 
         # -------------------------------------------------------
         # Repositories must be initialized BEFORE services
@@ -56,7 +58,7 @@ class MaraudersManager:
         self.scores_repo = ScoreRepository(self.db)
         self.prizes_repo = PrizeRepository(self.db)
         self.games_repo = GameRepository(self.db)
-        self.finance_repo = FinanceRepository(self.db)
+        self.finance_repo = FinanceRepository(self.db, self.settings_repo)
 
         # -------------------------------------------------------
         # Import Service — only if master file exists
@@ -80,7 +82,7 @@ class MaraudersManager:
             self.finance_repo
         )
 
-        self.player_service = PlayerService(self.db)
+        self.player_service = PlayerService(self.db, self.settings_repo)
         self.game_summary_service = GameSummaryService(self.db)
 
     # ===============================================================
@@ -99,13 +101,37 @@ class MaraudersManager:
     def get_game_dates(self):
         return self.scores_repo.get_game_dates()
 
+    def get_player_status(self, include_inactive=False):
+        """Return the main player status table for the Dashboard."""
+        return self.player_service.build_player_status_table(include_inactive)
+
     # ---------------------------------------------------------------
     # IMPORT SCORES
     # ---------------------------------------------------------------
     def import_new_scores(self):
         if not self.import_service:
-            raise RuntimeError("No master score file set.")
+            # Try to re-initialize if master file was set recently
+            if self.master_file:
+                self.import_service = ImportService(self.db, str(self.master_file))
+            else:
+                raise RuntimeError("No master score file set.")
         return self.import_service.import_new_scores()
+
+    def import_all_data(self):
+        """Run full import of all data (Scores, Players, Finance, Config)."""
+        if not self.import_service:
+             if self.master_file:
+                self.import_service = ImportService(self.db, str(self.master_file))
+             else:
+                raise RuntimeError("No master score file set.")
+        return self.import_service.import_all()
+
+    # ---------------------------------------------------------------
+    # PRIZE WRAPPERS
+    # ---------------------------------------------------------------
+    def compute_prizes(self):
+        """Compute all prizes and return the result."""
+        return self.prize_service.compute_all_prizes()
 
     # ---------------------------------------------------------------
     # FINANCE WRAPPERS
@@ -194,10 +220,11 @@ class MaraudersManager:
     def run_full_update(self):
         results = {}
 
-        # Import scores
+        # Import scores (and other data if present)
         if self.import_service:
             try:
-                results["import"] = self.import_service.import_new_scores()
+                # Use import_all_data to grab Players, Transactions, etc. if available
+                results["import"] = self.import_all_data()
             except Exception as e:
                 results["import_error"] = str(e)
         else:
@@ -229,52 +256,19 @@ class MaraudersManager:
         return results
 
     # ---------------------------------------------------------------
-    # SETTINGS STORAGE (AppSettings table)
+    # SETTINGS STORAGE (GlobalSettings table)
     # ---------------------------------------------------------------
     def get_setting(self, key: str, default=None):
-        df = self.db.read_sql(
-            "SELECT Value FROM AppSettings WHERE Setting = ?", (key,)
-        )
-        if df.empty:
-            return default
-        return df.iloc[0]["Value"]
+        return self.settings_repo.get_setting(key, default)
 
-    def set_setting(self, key: str, value: str):
-        self.db.execute(
-            """
-            INSERT INTO AppSettings (Setting, Value)
-            VALUES (?, ?)
-            ON CONFLICT(Setting) DO UPDATE SET Value = excluded.Value
-            """,
-            (key, value),
-        )
+    def set_setting(self, key: str, value: Any):
+        self.settings_repo.set_setting(key, value)
 
     def set_master_file(self, path: str):
-        # FIXED — correctly use own set_setting method
-        self.set_setting("MasterFile", path)
+        self.settings_repo.set_master_file(path)
         self.master_file = path
-
-    def _ensure_settings_table(self):
-        """Create AppSettings table if it does not exist."""
-        self.db.execute("""
-                        CREATE TABLE IF NOT EXISTS AppSettings
-                        (
-                            Setting TEXT PRIMARY KEY,
-                            Value TEXT
-                        )
-                        """)
-
-        # Insert default values if missing
-        defaults = {
-            "MasterFile": "",
-            "StartingKitty": "0"
-        }
-
-        for key, value in defaults.items():
-            self.db.execute(
-                "INSERT OR IGNORE INTO AppSettings (Setting, Value) VALUES (?, ?)",
-                (key, value)
-            )
+        # Re-initialize import service
+        self.import_service = ImportService(self.db, str(self.master_file))
 
     def rebuild_handicaps(self):
         """Rebuild all handicaps using the handicap service."""
